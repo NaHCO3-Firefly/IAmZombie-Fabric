@@ -10,9 +10,6 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.block.Rotation;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 
 /**
  * A SECOND, self-contained FakePlayer-driven GameTest harness for {@code iamzombieq} covering the rest of the FOOD
@@ -37,8 +34,7 @@ public final class IAmZombieFoodInfGameTests {
     private IAmZombieFoodInfGameTests() {
     }
 
-    @SubscribeEvent
-    public static void onRegisterGameTests(RegisterGameTestsEvent event) {
+        public static void onRegisterGameTests(RegisterGameTestsEvent event) {
         // Uniquely-named environments for THIS harness (never reuse env_hard/env_default -- a duplicate id crashes).
         Holder<TestEnvironmentDefinition<?>> defaultEnv =
                 event.registerEnvironment(modId("env_default_foodinf"));

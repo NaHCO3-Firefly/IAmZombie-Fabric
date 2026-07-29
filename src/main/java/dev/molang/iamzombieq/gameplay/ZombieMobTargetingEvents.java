@@ -26,14 +26,6 @@ import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
  * "Who attacks the zombie player?" — enforces the undead-four attacker table (亡灵四生物关系 · 无条件攻击版) on a
@@ -53,7 +45,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  * always preserved. The disguise mask (iron golem stands down) + the trade gate + the N9/N10 drowned-trident
  * social rules are unchanged.
  *
- * <p>Uses NeoForge's {@link LivingChangeTargetEvent} (fired centrally from setTarget, including the brain-based
+ * <p>Uses NeoForge's {@link Object} (fired centrally from setTarget, including the brain-based
  * BEHAVIOR_TARGET path used by piglins/brutes/hoglins), so a single server-side hook covers both goal- and
  * brain-based targeting.
  *
@@ -165,8 +157,7 @@ public final class ZombieMobTargetingEvents {
         return false;
     }
 
-    @SubscribeEvent
-    public static void onChangeTarget(LivingChangeTargetEvent event) {
+        public static void onChangeTarget(Object event) {
         LivingEntity mob = event.getEntity();
         LivingEntity newTarget = event.getNewAboutToBeSetTarget();
 
@@ -262,8 +253,7 @@ public final class ZombieMobTargetingEvents {
      * is the same {@link ZombieMobTargetingRules#attacksZombiePlayer} predicate the deny-list uses (so the seeded
      * target is never cancelled).
      */
-    @SubscribeEvent
-    public static void seedAttackersOntoZombiePlayer(PlayerTickEvent.Post event) {
+        public static void seedAttackersOntoZombiePlayer(Object event) {
         if (!IAmZombieConfig.UNDEAD_IGNORE_ZOMBIE_PLAYER.get()
                 || !(event.getEntity() instanceof ServerPlayer player)
                 || !isZombiePlayer(player)
@@ -302,8 +292,7 @@ public final class ZombieMobTargetingEvents {
      * the offender is a live Drowned. The search is bounded to {@link #DROWNED_RALLY_RADIUS} blocks and only
      * recruits targetless Drowned, so it never steals an in-progress fight and stays cheap.
      */
-    @SubscribeEvent
-    public static void onZombieHurtByDrownedTrident(LivingIncomingDamageEvent event) {
+        public static void onZombieHurtByDrownedTrident(Object event) {
         // Victim must be a plain Zombie but NOT a Drowned (N9 owns inter-drowned cases).
         if (!(event.getEntity() instanceof net.minecraft.world.entity.monster.zombie.Zombie zombie)
                 || zombie instanceof Drowned) {
@@ -332,8 +321,7 @@ public final class ZombieMobTargetingEvents {
      * from running. {@link AbstractVillager} is the common supertype matched here, covering both {@code Villager}
      * and {@code WanderingTrader}.
      */
-    @SubscribeEvent
-    public static void onMerchantInteract(PlayerInteractEvent.EntityInteract event) {
+        public static void onMerchantInteract(Object event) {
         if (event.getHand() != InteractionHand.MAIN_HAND) {
             return;
         }
@@ -355,11 +343,10 @@ public final class ZombieMobTargetingEvents {
 
     /**
      * G12 durability: spend one point of mask durability per SUCCESSFUL trade while the mask is worn. NeoForge's
-     * {@link TradeWithVillagerEvent} fires server-side from {@code AbstractVillager.notifyTrade} once a trade
+     * {@link Object} fires server-side from {@code AbstractVillager.notifyTrade} once a trade
      * result is taken, and carries the trading player, so it is the precise "successful trade" hook.
      */
-    @SubscribeEvent
-    public static void onTradeWithVillager(TradeWithVillagerEvent event) {
+        public static void onTradeWithVillager(Object event) {
         if (!(event.getEntity() instanceof Player player) || !isZombiePlayer(player)) {
             return;
         }
@@ -375,15 +362,13 @@ public final class ZombieMobTargetingEvents {
     // game-tick (dropped lazily in onChangeTarget / hasLiveGrudge when expired, evicted by their caps), but a player
     // who logs out, or a server stop, must not strand entries naming that player. Mirrors the
     // ZombieFoodEvents/ZombieMountEvents transient-map cleanup.
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        public static void onPlayerLoggedOut(Object event) {
         UUID playerId = event.getEntity().getUUID();
         CONVERSION_GRACE.values().removeIf(grace -> grace.convertingPlayer().equals(playerId));
         PLAYER_GRUDGE.values().removeIf(grudge -> grudge.grudgePlayer().equals(playerId));
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(Object event) {
         CONVERSION_GRACE.clear();
         PLAYER_GRUDGE.clear();
     }

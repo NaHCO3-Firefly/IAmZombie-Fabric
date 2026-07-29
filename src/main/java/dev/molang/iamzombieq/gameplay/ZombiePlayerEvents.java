@@ -73,12 +73,6 @@ import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @SuppressWarnings("deprecation")
 public final class ZombiePlayerEvents {
@@ -142,8 +136,7 @@ public final class ZombiePlayerEvents {
     private ZombiePlayerEvents() {
     }
 
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        public static void onPlayerTick(Object event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.isSpectator() || !player.isAlive()) {
             return;
         }
@@ -185,8 +178,7 @@ public final class ZombiePlayerEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
+        public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
         if (!shouldApplyZombieRules(event.getEntity())) {
             return;
         }
@@ -207,8 +199,7 @@ public final class ZombiePlayerEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onIncomingDamage(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
+        public static void onIncomingDamage(net.neoforged.neoforge.event.entity.living.Object event) {
         if (replaceSunlightFireDamage(event)) {
             return;
         }
@@ -241,8 +232,7 @@ public final class ZombiePlayerEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && shouldApplyZombieRules(player)) {
             boolean firstZombieAttach = !player.hasData(IAmZombieAttachments.PLAYER_ZOMBIE);
             PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
@@ -258,8 +248,7 @@ public final class ZombiePlayerEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        public static void onPlayerLoggedOut(Object event) {
         // Drop the player's sun-fire window on disconnect so it can't accumulate in the map for the server's
         // lifetime, nor mis-attribute a fresh (non-sun) fire to sunlight if they reconnect while it's still open.
         SUNLIGHT_FIRE_UNTIL.remove(event.getEntity().getUUID());
@@ -275,8 +264,7 @@ public final class ZombiePlayerEvents {
         GIANT_SWING_COOLDOWN.remove(event.getEntity().getUUID());
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(Object event) {
         SUNLIGHT_FIRE_UNTIL.clear();
         FORM_ATTRIBUTE_SIGNATURE.clear();
         REINFORCEMENT_CHANCE.clear();
@@ -285,8 +273,7 @@ public final class ZombiePlayerEvents {
         peacefulWarningLogged = false;
     }
 
-    @SubscribeEvent
-    public static void onPlayerClone(PlayerEvent.Clone event) {
+        public static void onPlayerClone(Object event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !shouldApplyZombieRules(player)) {
             return;
         }
@@ -311,8 +298,7 @@ public final class ZombiePlayerEvents {
         applyPassiveFormAbilities(player, nextData);
     }
 
-    @SubscribeEvent
-    public static void onLivingDeath(LivingDeathEvent event) {
+        public static void onLivingDeath(Object event) {
         if (event.getEntity() instanceof Giant
                 && event.getEntity().getType() == EntityTypes.GIANT
                 && event.getSource().getEntity() instanceof ServerPlayer killer
@@ -552,7 +538,7 @@ public final class ZombiePlayerEvents {
         for (Mob ally : level.getEntitiesOfClass(Mob.class, area, candidate ->
                 candidate != attacker && candidate.getType() == reinforcementType && candidate.isAlive() && candidate.canAttack(attacker) && candidate.getTarget() == null)) {
             if (ally instanceof ZombifiedPiglin piglin) {
-                // Establish anger BEFORE setTarget: setTarget fires LivingChangeTargetEvent, and the
+                // Establish anger BEFORE setTarget: setTarget fires Object, and the
                 // undead-ignore-zombie-player handler would otherwise null a target that is a zombie player before
                 // anger is recorded (group help would no-op).
                 piglin.setPersistentAngerTarget(EntityReference.of(attacker));
@@ -773,8 +759,7 @@ public final class ZombiePlayerEvents {
         return destroyed;
     }
 
-    @SubscribeEvent
-    public static void onGiantSwing(PlayerInteractEvent.LeftClickBlock event) {
+        public static void onGiantSwing(PlayerInteractEvent.LeftClickBlock event) {
         // The giant's active 一拳一大片: a left-click on a block within its long reach blasts a cube centred on the
         // aimed block. Server-authoritative (ServerPlayer only), gated to the START of the click and a cooldown.
         if (event.getAction() != PlayerInteractEvent.LeftClickBlock.Action.START
@@ -866,7 +851,7 @@ public final class ZombiePlayerEvents {
         );
     }
 
-    private static boolean replaceSunlightFireDamage(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
+    private static boolean replaceSunlightFireDamage(net.neoforged.neoforge.event.entity.living.Object event) {
         if (!(event.getEntity() instanceof ServerPlayer player)
                 || !shouldApplyZombieRules(player)
                 || event.getAmount() <= 0.0F) {

@@ -35,12 +35,6 @@ import net.minecraft.world.item.component.Consumable;
 import net.minecraft.world.level.block.CakeBlock;
 import net.minecraft.world.level.block.CandleCakeBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 public final class ZombieFoodEvents {
     private static final Map<UUID, ZombieFoodRules.PreservedFoodPunishments> PENDING_FOOD_PUNISHMENTS = new ConcurrentHashMap<>();
@@ -52,12 +46,11 @@ public final class ZombieFoodEvents {
     // G7: let a zombie player begin eating the special buff foods (pufferfish/spider eye/poisonous potato and the mod's
     // super rotten flesh) even at a full hunger bar. Vanilla's Consumable.startConsuming returns FAIL before
     // LivingEntity.startUsingItem when Player.canEat(false) is false, so the use never even reaches the
-    // LivingEntityUseItemEvent.Start handler above. We intercept the server-side right-click, manually start the
+    // Object handler above. We intercept the server-side right-click, manually start the
     // multi-tick eat ourselves, and short-circuit vanilla's Item.use with a CONSUME cancellation result. No vanilla
     // item / FoodProperties is mutated; the mod's super rotten flesh is already always-edible via its registration,
     // but is handled here too so the behavior is uniform for all four ids.
-    @SubscribeEvent
-    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        public static void onRightClickItem(Object event) {
         if (event.getLevel().isClientSide()) {
             return;
         }
@@ -99,8 +92,7 @@ public final class ZombieFoodEvents {
     // We mirror the cake's own eat gate here on the server-side right-click of the block and apply the same human-food
     // punishment + zombie effects the finished-eat handler applies for an ItemStack food. We do NOT cancel the event, so
     // vanilla still runs its own eat (eats the slice, plays sound, advances BITES); we only add the missing zombie rules.
-    @SubscribeEvent
-    public static void onRightClickCakeBlock(PlayerInteractEvent.RightClickBlock event) {
+        public static void onRightClickCakeBlock(Object event) {
         if (event.getLevel().isClientSide()) {
             return;
         }
@@ -141,8 +133,7 @@ public final class ZombieFoodEvents {
         // Intentionally NOT cancelled: vanilla CakeBlock#useWithoutItem still eats the slice as usual.
     }
 
-    @SubscribeEvent
-    public static void onItemUseStarted(LivingEntityUseItemEvent.Start event) {
+        public static void onItemUseStarted(Object event) {
         if (!(event.getEntity() instanceof Player player) || !shouldProcessZombieFood(player)) {
             return;
         }
@@ -164,8 +155,7 @@ public final class ZombieFoodEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onItemUseFinished(LivingEntityUseItemEvent.Finish event) {
+        public static void onItemUseFinished(Object event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
@@ -228,8 +218,7 @@ public final class ZombieFoodEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onItemUseStopped(LivingEntityUseItemEvent.Stop event) {
+        public static void onItemUseStopped(Object event) {
         if (event.getEntity() instanceof Player player) {
             clearPendingFoodSnapshots(player);
         }
@@ -237,20 +226,17 @@ public final class ZombieFoodEvents {
 
     // Vanilla die() calls stopUsingItem() (no Stop event) and a disconnect mid-eat does not fire Stop either,
     // so clear any pending snapshot on death/logout to avoid a per-UUID leak that never gets consumed.
-    @SubscribeEvent
-    public static void onPlayerDeath(LivingDeathEvent event) {
+        public static void onPlayerDeath(Object event) {
         if (event.getEntity() instanceof Player player) {
             clearPendingFoodSnapshots(player);
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        public static void onPlayerLoggedOut(Object event) {
         clearPendingFoodSnapshots(event.getEntity());
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(Object event) {
         PENDING_FOOD_PUNISHMENTS.clear();
         PENDING_GOLDEN_APPLE_EFFECTS.clear();
     }

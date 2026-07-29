@@ -16,8 +16,6 @@ import net.minecraft.world.entity.animal.equine.Horse;
 import net.minecraft.world.entity.animal.equine.ZombieHorse;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.common.util.FakePlayer;
-import net.neoforged.neoforge.event.EventHooks;
 
 import dev.molang.iamzombieq.IAmZombieConfig;
 import dev.molang.iamzombieq.IAmZombieItems;

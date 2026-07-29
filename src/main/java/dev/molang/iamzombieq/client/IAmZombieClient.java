@@ -33,20 +33,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.event.RenderArmEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import net.neoforged.neoforge.client.event.RenderPlayerEvent;
-import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
-import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 public final class IAmZombieClient {
     private static final ZombiePlayerShapeEntities ZOMBIE_PLAYER_SHAPES = new ZombiePlayerShapeEntities();
@@ -57,7 +43,7 @@ public final class IAmZombieClient {
     private static final Identifier HEROBRINE_HEAD_TEXTURE =
             ModIds.id("textures/entity/herobrine_head.png");
     private static boolean mutedByHerobrine;
-    // Client-side count of live Herobrine entities, maintained via EntityJoinLevelEvent/EntityLeaveLevelEvent so the
+    // Client-side count of live Herobrine entities, maintained via Object/Object so the
     // per-tick mute proximity scan can be skipped entirely when no Herobrine is present. Clamped at >= 0; reset on
     // logout. Never used to MUTE (only to skip the no-op scan) — when a Herobrine IS present the real AABB scan runs.
     private static int herobrinePresenceCount;
@@ -74,7 +60,7 @@ public final class IAmZombieClient {
     private IAmZombieClient() {
     }
 
-    public static void register(IEventBus modEventBus) {
+    public static void register(Object modEventBus) {
         modEventBus.addListener(IAmZombieClient::registerRenderers);
         modEventBus.addListener(IAmZombieClient::registerRendererLayers);
         modEventBus.addListener(IAmZombieClient::registerSkullLayers);
@@ -84,25 +70,25 @@ public final class IAmZombieClient {
         NeoForge.EVENT_BUS.register(DrownedVisionEvents.class);
     }
 
-    private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+    private static void registerRenderers(Object event) {
         event.registerEntityRenderer(IAmZombieEntities.HEROBRINE.get(), HerobrineRenderer::new);
     }
 
-    private static void registerSkullLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+    private static void registerSkullLayers(Object event) {
         event.registerLayerDefinition(HEROBRINE_HEAD_LAYER, SkullModel::createHumanoidHeadLayer);
     }
 
-    private static void createSkullModels(EntityRenderersEvent.CreateSkullModels event) {
+    private static void createSkullModels(Object event) {
         // Custom (non-vanilla) skull type → registered with a 64x64 humanoid model (SkullModel::new) and the fixed
         // Herobrine skin; this feeds SkullBlockRenderer's model/SKIN_BY_TYPE maps for block, worn and item rendering.
         event.registerSkullModel(HerobrineHeadType.HEROBRINE, HEROBRINE_HEAD_LAYER, HEROBRINE_HEAD_TEXTURE);
     }
 
-    private static void registerRendererLayers(EntityRenderersEvent.AddLayers event) {
+    private static void registerRendererLayers(Object event) {
         ZombiePlayerVisuals.initializeMonsterBodyLayers(event.getContext());
     }
 
-    private static void registerRenderStateModifiers(RegisterRenderStateModifiersEvent event) {
+    private static void registerRenderStateModifiers(Object event) {
         event.registerAvatarEntityModifier(new net.neoforged.neoforge.client.renderstate.AvatarRenderStateModifier() {
             @Override
             public <T extends net.minecraft.world.entity.Avatar & net.minecraft.client.entity.ClientAvatarEntity> void accept(
@@ -138,8 +124,7 @@ public final class IAmZombieClient {
         });
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+        public static void onClientTick(Object event) {
         Minecraft minecraft = Minecraft.getInstance();
         boolean shouldMute = isLocalPlayerNearHerobrine(minecraft);
         if (shouldMute) {
@@ -204,8 +189,7 @@ public final class IAmZombieClient {
         heartbeatCooldown = period;
     }
 
-    @SubscribeEvent
-    public static void onRenderGui(RenderGuiEvent.Post event) {
+        public static void onRenderGui(Object event) {
         if (joltVignetteTicks <= 0 || !IAmZombieConfig.HEROBRINE_JOLT_ENABLED.get()) {
             return;
         }
@@ -217,8 +201,7 @@ public final class IAmZombieClient {
         event.getGuiGraphics().fill(0, 0, width, height, color);
     }
 
-    @SubscribeEvent
-    public static void onClientLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        public static void onClientLoggingOut(Object event) {
         ZOMBIE_PLAYER_SHAPES.clear();
         ZombiePlayerVisuals.clearSkins();
         herobrinePresenceCount = 0;
@@ -227,15 +210,13 @@ public final class IAmZombieClient {
         restoreHerobrineMutedAudio(Minecraft.getInstance());
     }
 
-    @SubscribeEvent
-    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        public static void onEntityJoinLevel(Object event) {
         if (event.getLevel().isClientSide() && event.getEntity() instanceof HerobrineEntity) {
             herobrinePresenceCount++;
         }
     }
 
-    @SubscribeEvent
-    public static void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        public static void onEntityLeaveLevel(Object event) {
         if (event.getEntity() instanceof AbstractClientPlayer player) {
             ZOMBIE_PLAYER_SHAPES.remove(player);
             ZombiePlayerVisuals.invalidateSkin(player.getUUID());
@@ -244,8 +225,7 @@ public final class IAmZombieClient {
         }
     }
 
-    @SubscribeEvent
-    public static void onPlaySound(PlaySoundEvent event) {
+        public static void onPlaySound(Object event) {
         if (event.getSound() == null) {
             return;
         }
@@ -266,18 +246,15 @@ public final class IAmZombieClient {
         }
     }
 
-    @SubscribeEvent
-    public static void onRenderPlayerPre(RenderPlayerEvent.Pre<?> event) {
+        public static void onRenderPlayerPre(Object<?> event) {
         ZombiePlayerVisuals.applyPlayerSkin(event.getRenderState());
     }
 
-    @SubscribeEvent
-    public static void onRenderArm(RenderArmEvent event) {
+        public static void onRenderArm(Object event) {
         ZombiePlayerVisuals.renderFirstPersonArm(event);
     }
 
-    @SubscribeEvent
-    public static void onItemTooltip(ItemTooltipEvent event) {
+        public static void onItemTooltip(Object event) {
         Player player = event.getEntity();
         if (player == null || player.isCreative() || player.isSpectator()) {
             return;

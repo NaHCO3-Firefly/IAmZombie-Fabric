@@ -40,15 +40,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
-import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
-import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 public final class HerobrineEvents {
     private static final double NEARBY_HEROBRINE_RANGE = 64.0;
@@ -74,16 +65,15 @@ public final class HerobrineEvents {
     // per-level OmenLightsSavedData (extinguished blocks restore after a server restart).
 
     // Number of live HerobrineEntity instances currently in the world. Incremented from
-    // EntityJoinLevelEvent (so ANY spawn — natural cave spawn, /summon, or otherwise — arms the
-    // per-tick gaze scan) and decremented via EntityLeaveLevelEvent so discard/death/chunk-unload
+    // Object (so ANY spawn — natural cave spawn, /summon, or otherwise — arms the
+    // per-tick gaze scan) and decremented via Object so discard/death/chunk-unload
     // are all covered robustly. Reset on server stop. Server-thread only.
     private static int liveHerobrineCount = 0;
 
     private HerobrineEvents() {
     }
 
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        public static void onPlayerTick(Object event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.isSpectator() || !player.isAlive()) {
             return;
         }
@@ -96,8 +86,7 @@ public final class HerobrineEvents {
         restoreExpiredOmenLights(level);
     }
 
-    @SubscribeEvent
-    public static void onAttackEntity(AttackEntityEvent event) {
+        public static void onAttackEntity(Object event) {
         if (!(event.getTarget() instanceof HerobrineEntity herobrine) || !(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
@@ -106,8 +95,7 @@ public final class HerobrineEvents {
         handleEncounter(player, herobrine);
     }
 
-    @SubscribeEvent
-    public static void onProjectileImpact(ProjectileImpactEvent event) {
+        public static void onProjectileImpact(Object event) {
         // Any projectile striking Herobrine — arrow, trident, snowball, egg, AND thrown splash /
         // lingering potions (ThrownPotion is a Projectile) — counts as an interaction if its owner
         // is a server player. Resolve the entity hit, confirm it's Herobrine, resolve the owner,
@@ -130,24 +118,21 @@ public final class HerobrineEvents {
         handleEncounter(player, herobrine);
     }
 
-    @SubscribeEvent
-    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        public static void onEntityInteract(Object event) {
         if (event.getTarget() instanceof HerobrineEntity) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
         }
     }
 
-    @SubscribeEvent
-    public static void onEntityInteractSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
+        public static void onEntityInteractSpecific(Object event) {
         if (event.getTarget() instanceof HerobrineEntity) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerClone(PlayerEvent.Clone event) {
+        public static void onPlayerClone(Object event) {
         // On a real death the server builds a brand-new ServerPlayer; this is where we move the
         // snapshotted inventory + XP onto the NEW player so the encounter death "keeps inventory"
         // (the old player's inventory was already cleared before the kill, so vanilla drops
@@ -182,8 +167,7 @@ public final class HerobrineEvents {
         restoreExperience(newPlayer, pending);
     }
 
-    @SubscribeEvent
-    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        public static void onPlayerRespawn(Object event) {
         // After the death screen, teleport the (new) player back to exactly where they died,
         // facing the same way, so the encounter death reads as "respawn in place" without ever
         // touching the player's bed/world spawn. Consume the pending entry only here, once the
@@ -211,12 +195,11 @@ public final class HerobrineEvents {
         player.setData(IAmZombieAttachments.HEROBRINE_PENDING_RESPAWN, HerobrineRespawnSnapshot.EMPTY);
     }
 
-    @SubscribeEvent
-    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        public static void onEntityJoinLevel(Object event) {
         // Increment for ANY HerobrineEntity entering a server level — natural cave spawn, /summon,
         // or chunk-load — so a live Herobrine ALWAYS arms the per-tick gaze scan (the root cause of
         // "looking does nothing, only attack works" was that the count was bumped only at the
-        // natural-spawn site). EntityLeaveLevelEvent decrements symmetrically.
+        // natural-spawn site). Object decrements symmetrically.
         if (event.getLevel().isClientSide()) {
             return;
         }
@@ -225,8 +208,7 @@ public final class HerobrineEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        public static void onEntityLeaveLevel(Object event) {
         // Robustly covers discard (gaze/attack/projectile death), entity death, and chunk-unload.
         // Filter to the server level so the count stays a pure server-side gate matching the join
         // increment.
@@ -238,8 +220,7 @@ public final class HerobrineEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(Object event) {
         liveHerobrineCount = 0;
         // Dread (HEROBRINE_ENCOUNTER attachment) and omen restorations (OmenLightsSavedData) are now
         // durable, so they are NOT cleared here — they persist across restart by design. Only the

@@ -10,9 +10,6 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.block.Rotation;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 
 /**
  * FakePlayer-driven NeoForge GameTests for the cleanly-automatable GIANT + PIGLIN + POTION subset of the
@@ -40,8 +37,7 @@ public final class IAmZombieGiantSunGameTests {
     private IAmZombieGiantSunGameTests() {
     }
 
-    @SubscribeEvent
-    public static void onRegisterGameTests(RegisterGameTestsEvent event) {
+        public static void onRegisterGameTests(RegisterGameTestsEvent event) {
         Holder<TestEnvironmentDefinition<?>> hardEnv =
                 event.registerEnvironment(modId("env_hard_giantsun"), new TestEnvironmentDefinition.SetDifficulty(Difficulty.HARD));
 

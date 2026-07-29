@@ -14,10 +14,6 @@ import net.minecraft.world.entity.animal.pig.Pig;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.common.CommonHooks;
-import net.neoforged.neoforge.common.util.FakePlayer;
-import net.neoforged.neoforge.event.EventHooks;
-import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 
 import dev.molang.iamzombieq.IAmZombieItems;
 

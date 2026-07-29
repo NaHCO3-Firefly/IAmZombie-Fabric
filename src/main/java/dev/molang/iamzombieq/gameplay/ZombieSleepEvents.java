@@ -13,46 +13,39 @@ import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 public final class ZombieSleepEvents {
     private ZombieSleepEvents() {
     }
 
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getHand() != InteractionHand.MAIN_HAND) {
-            return;
+    public static InteractionResult onRightClickBlock(Player player, Level level, InteractionHand hand, BlockPos pos) {
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
         }
 
-        Player player = event.getEntity();
         SleepAction action = ZombieSleepRules.useBed(isZombiePlayer(player));
         if (action != SleepAction.BED_EXPLODES) {
-            return;
+            return InteractionResult.PASS;
         }
 
-        Level level = player.level();
-        BlockPos clickedPos = event.getPos();
-        BlockState clickedState = level.getBlockState(clickedPos);
+        BlockState clickedState = level.getBlockState(pos);
         if (!(clickedState.getBlock() instanceof BedBlock)) {
-            return;
+            return InteractionResult.PASS;
         }
 
         // Only the "use the bed" gesture explodes; a sneaking player placing a block against the bed should still place it.
         if (player.isSecondaryUseActive() && !player.getMainHandItem().isEmpty()) {
-            return;
+            return InteractionResult.PASS;
         }
-
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
 
         if (!level.isClientSide()) {
             if (player instanceof ServerPlayer serverPlayer) {
                 IAmZombieAdvancements.award(serverPlayer, IAmZombieAdvancements.BED);
             }
-            explodeBed(level, clickedPos, clickedState);
+            explodeBed(level, pos, clickedState);
         }
+
+        return InteractionResult.SUCCESS;
     }
 
     private static boolean isZombiePlayer(Player player) {
@@ -75,10 +68,11 @@ public final class ZombieSleepEvents {
         }
 
         Vec3 boomPos = Vec3.atCenterOf(headPos);
-        ZombieSleepRules.BedExplosionSettings settings = ZombieSleepRules.bedExplosionSettings(
+        var settings = ZombieSleepRules.bedExplosionSettings(
                 IAmZombieConfig.BED_EXPLOSION_POWER.get().floatValue(),
-                IAmZombieConfig.BED_EXPLOSION_CAUSES_FIRE.get()
+                IAmZombieConfig.BED_EXPLOSION_FIRE.get()
         );
-        level.explode(null, level.damageSources().badRespawnPointExplosion(boomPos), null, boomPos, settings.power(), settings.causesFire(), Level.ExplosionInteraction.BLOCK);
+        level.explode(null, level.damageSources().badRespawnPointExplosion(boomPos), null, boomPos,
+                settings.power(), settings.causesFire(), Level.ExplosionInteraction.BLOCK);
     }
 }

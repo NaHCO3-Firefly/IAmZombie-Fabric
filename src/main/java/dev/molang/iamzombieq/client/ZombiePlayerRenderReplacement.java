@@ -9,7 +9,6 @@ import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.util.context.ContextKey;
 import net.minecraft.world.entity.LivingEntity;
-import net.neoforged.neoforge.client.extensions.IRenderStateExtension;
 
 public record ZombiePlayerRenderReplacement(
         EntityRenderer<LivingEntity, EntityRenderState> renderer,

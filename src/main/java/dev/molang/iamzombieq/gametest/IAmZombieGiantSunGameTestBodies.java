@@ -11,9 +11,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.util.FakePlayer;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
  * FakePlayer-driven GameTest bodies for the GIANT + PIGLIN + POTION subset of the {@code iamzombieq} gameplay rules,

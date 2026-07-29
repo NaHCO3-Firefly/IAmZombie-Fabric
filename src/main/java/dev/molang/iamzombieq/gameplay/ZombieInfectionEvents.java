@@ -23,16 +23,12 @@ import net.minecraft.world.entity.monster.zombie.ZombieVillager;
 import net.minecraft.world.entity.monster.zombie.ZombifiedPiglin;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.EventHooks;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 public final class ZombieInfectionEvents {
     private ZombieInfectionEvents() {
     }
 
-    @SubscribeEvent
-    public static void onLivingDeath(LivingDeathEvent event) {
+        public static void onLivingDeath(Object event) {
         LivingEntity victim = event.getEntity();
         if (!(victim.level() instanceof ServerLevel level)) {
             return;
@@ -54,12 +50,12 @@ public final class ZombieInfectionEvents {
         }
     }
 
-    private static void tryInfectVillager(LivingDeathEvent event, ServerLevel level, Villager villager, Player player) {
+    private static void tryInfectVillager(Object event, ServerLevel level, Villager villager, Player player) {
         if (!ZombieInfectionRules.shouldInfect(IAmZombieConfig.configuredInfectionChance(gameDifficulty(level.getDifficulty())), villager.getRandom().nextDouble())) {
             return;
         }
 
-        if (!EventHooks.canLivingConvert(villager, EntityTypes.ZOMBIE_VILLAGER, timer -> {})) {
+        if (!Object.canLivingConvert(villager, EntityTypes.ZOMBIE_VILLAGER, timer -> {})) {
             return;
         }
 
@@ -82,16 +78,16 @@ public final class ZombieInfectionEvents {
     }
 
     // N1: a zombie player that kills a Pig OR any Piglin/AbstractPiglin can infect it into a zombified piglin, mirroring
-    // the villager infection (difficulty-scaled chance, EventHooks.canLivingConvert gate, INFECTION advancement). Both
+    // the villager infection (difficulty-scaled chance, Object.canLivingConvert gate, INFECTION advancement). Both
     // source types convert to ZOMBIFIED_PIGLIN, matching vanilla's pig+lightning zombification. Form-gated (see the
     // call site): ONLY a ZOMBIFIED_PIGLIN-form zombie player infects pigs/piglins into zombified piglins (the form is
     // the "kin" of what it spreads); NORMAL/DROWNED/HUSK/GIANT cannot.
-    private static void tryInfectIntoZombifiedPiglin(LivingDeathEvent event, ServerLevel level, Mob victim, Player player) {
+    private static void tryInfectIntoZombifiedPiglin(Object event, ServerLevel level, Mob victim, Player player) {
         if (!ZombieInfectionRules.shouldInfect(IAmZombieConfig.configuredInfectionChance(gameDifficulty(level.getDifficulty())), victim.getRandom().nextDouble())) {
             return;
         }
 
-        if (!EventHooks.canLivingConvert(victim, EntityTypes.ZOMBIFIED_PIGLIN, timer -> {})) {
+        if (!Object.canLivingConvert(victim, EntityTypes.ZOMBIFIED_PIGLIN, timer -> {})) {
             return;
         }
 
@@ -145,7 +141,7 @@ public final class ZombieInfectionEvents {
                     zombie.setGossips(villager.getGossips().copy());
                     zombie.setTradeOffers(villager.getOffers().copy());
                     zombie.setVillagerXp(villager.getVillagerXp());
-                    EventHooks.onLivingConvert(villager, zombie);
+                    Object.onLivingConvert(villager, zombie);
                     if (!villager.isSilent()) {
                         level.levelEvent(null, 1026, villager.blockPosition(), 0);
                     }
@@ -183,7 +179,7 @@ public final class ZombieInfectionEvents {
                             null
                     );
                     piglin.setPersistenceRequired();
-                    EventHooks.onLivingConvert(victim, piglin);
+                    Object.onLivingConvert(victim, piglin);
                     if (!victim.isSilent()) {
                         level.levelEvent(null, 1026, victim.blockPosition(), 0);
                     }

@@ -45,8 +45,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.event.RenderPlayerEvent;
-import net.neoforged.neoforge.client.event.RenderArmEvent;
 
 public final class ZombiePlayerVisuals {
     private static MonsterModels monsterModels;
@@ -87,7 +85,7 @@ public final class ZombiePlayerVisuals {
         state.showRightPants = false;
     }
 
-    public static void renderMonsterBody(RenderPlayerEvent.Pre<?> event) {
+    public static void renderMonsterBody(Object<?> event) {
         if (!ZombieRenderRules.usesMonsterTexture(IAmZombieClientConfig.PLAYER_SKIN_MODE.get())) {
             return;
         }
@@ -132,7 +130,7 @@ public final class ZombiePlayerVisuals {
     }
 
     @SuppressWarnings("deprecation")
-    public static void renderFirstPersonArm(RenderArmEvent event) {
+    public static void renderFirstPersonArm(Object event) {
         if (renderingFirstPersonArm) {
             return;
         }

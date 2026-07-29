@@ -10,7 +10,6 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.monster.Giant;
 import net.minecraft.world.level.GameType;
-import net.neoforged.neoforge.common.util.FakePlayer;
 
 /**
  * FakePlayer-driven NeoForge GameTest bodies for the FORM (§2.1) and ATTR (§2.2) acceptance rows of {@code iamzombieq},

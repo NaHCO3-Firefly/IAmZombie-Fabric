@@ -19,9 +19,6 @@ import net.minecraft.world.entity.animal.equine.ZombieHorse;
 import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.util.FakePlayer;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
  * FakePlayer-driven bodies for the {@code iamzombieq} MOUNT GameTests (catalog &sect;2.12 MNT), registered by

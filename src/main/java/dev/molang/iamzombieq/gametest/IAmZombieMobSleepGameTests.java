@@ -10,9 +10,6 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.block.Rotation;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 
 /**
  * FakePlayer-driven NeoForge GameTests for the MOB-targeting, SLEEP (bed), REINF (reinforcement alert) and DOOR
@@ -38,8 +35,7 @@ public final class IAmZombieMobSleepGameTests {
     private IAmZombieMobSleepGameTests() {
     }
 
-    @SubscribeEvent
-    public static void onRegisterGameTests(RegisterGameTestsEvent event) {
+        public static void onRegisterGameTests(RegisterGameTestsEvent event) {
         // HARD difficulty, isolated under a unique id so it never reuses the food suite's env_hard/env_default.
         Holder<TestEnvironmentDefinition<?>> hardEnv =
                 event.registerEnvironment(modId("env_hard_mobsleep"), new TestEnvironmentDefinition.SetDifficulty(Difficulty.HARD));

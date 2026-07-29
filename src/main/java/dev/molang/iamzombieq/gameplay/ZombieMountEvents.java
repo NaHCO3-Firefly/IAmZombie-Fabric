@@ -44,15 +44,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.EventHooks;
-import net.neoforged.neoforge.event.entity.EntityMountEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 public final class ZombieMountEvents {
     // Keyed by horse UUID. Bounded LinkedHashMap with insertion-order eviction: entries are normally
@@ -72,8 +63,7 @@ public final class ZombieMountEvents {
     private ZombieMountEvents() {
     }
 
-    @SubscribeEvent
-    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        public static void onEntityInteract(Object event) {
         if (event.getHand() != InteractionHand.MAIN_HAND) {
             return;
         }
@@ -142,8 +132,7 @@ public final class ZombieMountEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onEntityMount(EntityMountEvent event) {
+        public static void onEntityMount(Object event) {
         if (!event.isMounting() || !(event.getEntityMounting() instanceof Player player) || !isZombiePlayer(player)) {
             return;
         }
@@ -165,8 +154,7 @@ public final class ZombieMountEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onIncomingDamage(LivingIncomingDamageEvent event) {
+        public static void onIncomingDamage(Object event) {
         if (!(event.getEntity() instanceof Horse horse) || horse.level().isClientSide()) {
             return;
         }
@@ -180,8 +168,7 @@ public final class ZombieMountEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onLivingDeath(LivingDeathEvent event) {
+        public static void onLivingDeath(Object event) {
         if (event.getEntity() instanceof Nautilus nautilus && nautilus.level() instanceof ServerLevel nautilusLevel) {
             handleNautilusDeath(event, nautilusLevel, nautilus);
             return;
@@ -197,7 +184,7 @@ public final class ZombieMountEvents {
         if (!ZombieInfectionRules.shouldInfect(IAmZombieConfig.configuredInfectionChance(gameDifficulty(level.getDifficulty())), horse.getRandom().nextDouble())) {
             return;
         }
-        if (!EventHooks.canLivingConvert(horse, EntityTypes.ZOMBIE_HORSE, timer -> {})) {
+        if (!Object.canLivingConvert(horse, EntityTypes.ZOMBIE_HORSE, timer -> {})) {
             return;
         }
 
@@ -209,13 +196,11 @@ public final class ZombieMountEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(Object event) {
         PENDING_HORSE_HEALTH_RATIOS.clear();
     }
 
-    @SubscribeEvent
-    public static void onLivingChangeTarget(LivingChangeTargetEvent event) {
+        public static void onLivingChangeTarget(Object event) {
         if (!(event.getEntity() instanceof Spider spider) || !(event.getNewAboutToBeSetTarget() instanceof Player player)) {
             if (event.getEntity() instanceof Zombie zombie
                     && event.getNewAboutToBeSetTarget() instanceof Player target
@@ -229,8 +214,7 @@ public final class ZombieMountEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onEntityTick(EntityTickEvent.Post event) {
+        public static void onEntityTick(EntityTickEvent.Post event) {
         if (event.getEntity().level().isClientSide()) {
             return;
         }
@@ -275,7 +259,7 @@ public final class ZombieMountEvents {
         return target instanceof Horse && !(target instanceof ZombieHorse) && !(target instanceof SkeletonHorse);
     }
 
-    private static void handleBigZombieInteract(PlayerInteractEvent.EntityInteract event, Player player, Zombie zombie) {
+    private static void handleBigZombieInteract(Object event, Player player, Zombie zombie) {
         ItemStack stack = player.getItemInHand(event.getHand());
         if (!stack.isEmpty() || !isRideableBigZombie(zombie)) {
             return;
@@ -305,7 +289,7 @@ public final class ZombieMountEvents {
         event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
     }
 
-    private static void handleChickenInteract(PlayerInteractEvent.EntityInteract event, Player player, Chicken chicken) {
+    private static void handleChickenInteract(Object event, Player player, Chicken chicken) {
         ItemStack stack = player.getItemInHand(event.getHand());
         if (!stack.isEmpty()) {
             return;
@@ -328,7 +312,7 @@ public final class ZombieMountEvents {
         event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
     }
 
-    private static void handleSpiderInteract(PlayerInteractEvent.EntityInteract event, Player player, Spider spider) {
+    private static void handleSpiderInteract(Object event, Player player, Spider spider) {
         ItemStack stack = player.getItemInHand(event.getHand());
         SpiderMountData data = spider.getData(IAmZombieAttachments.SPIDER_MOUNT);
         if (isSpiderFood(stack)) {
@@ -347,7 +331,7 @@ public final class ZombieMountEvents {
                 // routes through Entity.canRide, which refuses to mount while the rider is sneaking
                 // (isShiftKeyDown) -- and players commonly sneak when carefully approaching a hostile
                 // spider, which previously made a tamed spider impossible to ride. The forced overload
-                // still fires EntityMountEvent (-> onEntityMount), so the canMount rule remains the gate.
+                // still fires Object (-> onEntityMount), so the canMount rule remains the gate.
                 player.startRiding(spider, true, true);
             }
             event.setCanceled(true);
@@ -447,14 +431,14 @@ public final class ZombieMountEvents {
         return Math.max(0.0F, horse.getHealth() / horse.getMaxHealth());
     }
 
-    private static void handleNautilusDeath(LivingDeathEvent event, ServerLevel level, Nautilus nautilus) {
+    private static void handleNautilusDeath(Object event, ServerLevel level, Nautilus nautilus) {
         if (!(event.getSource().getEntity() instanceof Player player) || !isZombiePlayer(player)) {
             return;
         }
         if (!ZombieInfectionRules.shouldInfect(IAmZombieConfig.configuredInfectionChance(gameDifficulty(level.getDifficulty())), nautilus.getRandom().nextDouble())) {
             return;
         }
-        if (!EventHooks.canLivingConvert(nautilus, EntityTypes.ZOMBIE_NAUTILUS, timer -> {})) {
+        if (!Object.canLivingConvert(nautilus, EntityTypes.ZOMBIE_NAUTILUS, timer -> {})) {
             return;
         }
 

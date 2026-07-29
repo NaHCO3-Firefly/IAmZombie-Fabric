@@ -10,9 +10,6 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.block.Rotation;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 
 /**
  * FakePlayer-driven NeoForge GameTest harness for {@code iamzombieq} (MC 26.2 / NeoForge 26.2.0.6-beta).
@@ -41,8 +38,7 @@ public final class IAmZombieGameTests {
     private IAmZombieGameTests() {
     }
 
-    @SubscribeEvent
-    public static void onRegisterGameTests(RegisterGameTestsEvent event) {
+        public static void onRegisterGameTests(RegisterGameTestsEvent event) {
         // A no-op environment (empty AllOf) for tests that don't need a specific world setup.
         Holder<TestEnvironmentDefinition<?>> defaultEnv =
                 event.registerEnvironment(modId("env_default"));

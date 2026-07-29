@@ -6,8 +6,6 @@ import dev.molang.iamzombieq.state.PlayerZombieData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.level.material.FogType;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /**
  * Client-only handler for G3 (drowned wet-state clear vision).
@@ -40,8 +38,7 @@ public final class DrownedVisionEvents {
     private DrownedVisionEvents() {
     }
 
-    @SubscribeEvent
-    public static void onRenderFog(ViewportEvent.RenderFog event) {
+        public static void onRenderFog(Object event) {
         if (!CLEAR_DROWNED_WATER_FOG) {
             return;
         }
