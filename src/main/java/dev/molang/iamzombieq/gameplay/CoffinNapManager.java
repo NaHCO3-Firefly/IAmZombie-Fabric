@@ -149,11 +149,17 @@ public final class CoffinNapManager {
         }
     }
 
-    /** Advance this dimension's clock to NIGHT. Uses vanilla clock API directly. */
+    /** Advance this dimension's clock to NIGHT using MC 26.2 clock API. */
     private static boolean advanceToNight(ServerLevel level) {
-        // TODO: Fabric port — the effectiveClock() / clockManager() API was removed in MC 26.2.
-        // Use the vanilla day-time-accumulation approach (setDayTime, or sleep-scoreboard) instead.
-        return false;
+        var clockHolder = level.dimensionType().defaultClock();
+        if (clockHolder.isEmpty()) return false;
+        var clock = clockHolder.get();
+        var clockManager = level.clockManager();
+        boolean result = clockManager.moveToTimeMarker(clock, net.minecraft.world.clock.ClockTimeMarkers.NIGHT);
+        if (level.isRaining()) {
+            level.resetWeatherCycle();
+        }
+        return result;
     }
 
     /** Called from {@code ServerPlayConnectionEvents.DISCONNECT} in IAmZombieMod. */

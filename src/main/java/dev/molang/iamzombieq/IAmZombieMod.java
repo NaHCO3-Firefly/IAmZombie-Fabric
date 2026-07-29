@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 
@@ -67,6 +68,12 @@ public final class IAmZombieMod implements ModInitializer {
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) ->
                 dev.molang.iamzombieq.gameplay.ZombieSleepEvents.onRightClickBlock(
                         player, world, hand, hitResult.getBlockPos()));
+
+        // Item use (eating) — zombie food rules
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            dev.molang.iamzombieq.gameplay.ZombieFoodEvents.onRightClickItem();
+            return net.minecraft.world.InteractionResult.PASS;
+        });
 
         LOGGER.info("{} initialized", ENGLISH_NAME);
     }

@@ -11,7 +11,11 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.StandingAndWallBlockItem;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.food.FoodProperties;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.core.component.DataComponents;
 
 public final class IAmZombieItems {
     public static BlockItem COFFIN;
@@ -39,7 +43,12 @@ public final class IAmZombieItems {
                 itemProps("super_rotten_flesh").food(new FoodProperties.Builder()
                         .alwaysEdible().nutrition(20).saturationModifier(1.0F).build())));
         DISGUISE_MASK = reg("disguise_mask", new Item(
-                itemProps("disguise_mask").stacksTo(1).durability(15)));
+                itemProps("disguise_mask").stacksTo(1).durability(15)
+                        .component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD)
+                                .setSwappable(true)
+                                .setDamageOnHurt(true)
+                                .setEquipSound(SoundEvents.ARMOR_EQUIP_LEATHER)
+                                .build())));
         //HEROBRINE_HEAD = reg("herobrine_head", new StandingAndWallBlockItem(
         //        IAmZombieBlocks.HEROBRINE_HEAD,
         //        IAmZombieBlocks.HEROBRINE_WALL_HEAD,

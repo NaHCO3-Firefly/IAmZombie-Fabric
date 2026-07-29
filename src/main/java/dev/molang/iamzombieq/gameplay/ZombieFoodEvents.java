@@ -50,7 +50,7 @@ public final class ZombieFoodEvents {
     // multi-tick eat ourselves, and short-circuit vanilla's Item.use with a CONSUME cancellation result. No vanilla
     // item / FoodProperties is mutated; the mod's super rotten flesh is already always-edible via its registration,
     // but is handled here too so the behavior is uniform for all four ids.
-        public static void onRightClickItem(Object event) {
+    public static void onRightClickItem() {
     }
 
     // Cake (and candle cake) is eaten as a BLOCK via CakeBlock#useWithoutItem, never as an ItemStack, so it never fires
@@ -58,29 +58,27 @@ public final class ZombieFoodEvents {
     // We mirror the cake's own eat gate here on the server-side right-click of the block and apply the same human-food
     // punishment + zombie effects the finished-eat handler applies for an ItemStack food. We do NOT cancel the event, so
     // vanilla still runs its own eat (eats the slice, plays sound, advances BITES); we only add the missing zombie rules.
-        public static void onRightClickCakeBlock(Object event) {
+    public static void onRightClickCakeBlock() {
     }
 
-        public static void onItemUseStarted(Object event) {
+    public static void onItemUseStarted() {
     }
 
-        public static void onItemUseFinished(Object event) {
+    public static void onItemUseFinished() {
     }
 
-        public static void onItemUseStopped(Object event) {
+    public static void onItemUseStopped() {
     }
 
     // Vanilla die() calls stopUsingItem() (no Stop event) and a disconnect mid-eat does not fire Stop either,
     // so clear any pending snapshot on death/logout to avoid a per-UUID leak that never gets consumed.
-        public static void onPlayerDeath(Object event) {
+    public static void onPlayerDeath() {
     }
 
-        public static void onPlayerLoggedOut(Object event) {
+    public static void onPlayerLoggedOut() {
     }
 
-        public static void onServerStopped(Object event) {
-        PENDING_FOOD_PUNISHMENTS.clear();
-        PENDING_GOLDEN_APPLE_EFFECTS.clear();
+    public static void onServerStopped() {
     }
 
     // Whether this player's food use should be inspected at all (server-side, not a spectator). Creative is included
