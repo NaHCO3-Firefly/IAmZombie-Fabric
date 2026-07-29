@@ -44,13 +44,27 @@ public final class ZombieFoodEvents {
     }
 
     // G7: let a zombie player begin eating the special buff foods (pufferfish/spider eye/poisonous potato and the mod's
-    // super rotten flesh) even at a full hunger bar. Vanilla's Consumable.startConsuming returns FAIL before
-    // LivingEntity.startUsingItem when Player.canEat(false) is false, so the use never even reaches the
-    // Object handler above. We intercept the server-side right-click, manually start the
-    // multi-tick eat ourselves, and short-circuit vanilla's Item.use with a CONSUME cancellation result. No vanilla
-    // item / FoodProperties is mutated; the mod's super rotten flesh is already always-edible via its registration,
-    // but is handled here too so the behavior is uniform for all four ids.
-    public static void onRightClickItem() {
+    // super rotten flesh) even at a full hunger bar.
+    public static InteractionResult onRightClickItem(Player player, net.minecraft.world.level.Level level, net.minecraft.world.InteractionHand hand) {
+        if (level.isClientSide() || !shouldProcessZombieFood(player)) {
+            return InteractionResult.PASS;
+        }
+        var stack = player.getItemInHand(hand);
+        if (!isFood(stack)) {
+            return InteractionResult.PASS;
+        }
+        String id = itemId(stack);
+        if (!ZombieFoodRules.isFoodRuleTarget(id)) {
+            return InteractionResult.PASS;
+        }
+        var rule = resolveFoodRule(player, stack, id);
+        if (rule == null) {
+            return InteractionResult.PASS;
+        }
+        if (!player.isUsingItem()) {
+            player.startUsingItem(hand);
+        }
+        return InteractionResult.CONSUME;
     }
 
     // Cake (and candle cake) is eaten as a BLOCK via CakeBlock#useWithoutItem, never as an ItemStack, so it never fires

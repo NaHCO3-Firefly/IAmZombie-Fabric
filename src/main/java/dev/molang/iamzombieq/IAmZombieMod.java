@@ -70,10 +70,8 @@ public final class IAmZombieMod implements ModInitializer {
                         player, world, hand, hitResult.getBlockPos()));
 
         // Item use (eating) — zombie food rules
-        UseItemCallback.EVENT.register((player, world, hand) -> {
-            dev.molang.iamzombieq.gameplay.ZombieFoodEvents.onRightClickItem();
-            return net.minecraft.world.InteractionResult.PASS;
-        });
+        UseItemCallback.EVENT.register((player, world, hand) ->
+                dev.molang.iamzombieq.gameplay.ZombieFoodEvents.onRightClickItem(player, world, hand));
 
         LOGGER.info("{} initialized", ENGLISH_NAME);
     }
