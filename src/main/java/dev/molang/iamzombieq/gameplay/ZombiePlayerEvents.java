@@ -136,22 +136,47 @@ public final class ZombiePlayerEvents {
     private ZombiePlayerEvents() {
     }
 
-        public static void onPlayerTick(Object event) {
+        public static void onPlayerTick(ServerPlayer player) {
+        if (!shouldApplyZombieRules(player)) return;
+        refreshFormAttributes(player, dataOf(player));
+        if (player.tickCount % 20 == 0) {
+            igniteSunlightBurn(player);
+        }
+        // Baby → adult growth
+        var data = dataOf(player);
+        if (data.state().size() == dev.molang.iamzombieq.rules.core.ZombieSize.BABY
+                && player.getFoodData().getFoodLevel() <= 0) {
+            dev.molang.iamzombieq.internal.core.ServerZombiePlayer.of(player).setSize(dev.molang.iamzombieq.rules.core.ZombieSize.ADULT);
+        }
+        // Giant tick
+        if (data.state().form() == ZombieForm.GIANT) {
+            handleGiantTick(player);
+        }
     }
 
-        public static void onBreakSpeed(Object event) {
+        public static void onBreakSpeed(ServerPlayer player, BlockState state, BlockPos pos) {
     }
 
-        public static void onIncomingDamage(Object event) {
+        public static void onIncomingDamage(ServerPlayer player, DamageSource source, float amount) {
     }
 
-        public static void onPlayerLoggedIn(Object event) {
+        public static void onPlayerLoggedIn(ServerPlayer player) {
+        if (player.level().isClientSide()) return;
+        refreshFormAttributes(player, dataOf(player));
+        // First-join: unlock coffin recipes
+        // TODO: Fix recipe unlocking for MC 26.2 API
+        // player.awardRecipes(COFFIN_RECIPES);
     }
 
-        public static void onPlayerLoggedOut(Object event) {
+        public static void onPlayerLoggedOut(ServerPlayer player) {
+        SUNLIGHT_FIRE_UNTIL.remove(player.getUUID());
+        FORM_ATTRIBUTE_SIGNATURE.remove(player.getUUID());
+        REINFORCEMENT_CHANCE.remove(player.getUUID());
+        GIANT_LAST_POS.remove(player.getUUID());
+        GIANT_SWING_COOLDOWN.remove(player.getUUID());
     }
 
-        public static void onServerStopped(Object event) {
+        public static void onServerStopped() {
         SUNLIGHT_FIRE_UNTIL.clear();
         FORM_ATTRIBUTE_SIGNATURE.clear();
         REINFORCEMENT_CHANCE.clear();
@@ -160,10 +185,27 @@ public final class ZombiePlayerEvents {
         peacefulWarningLogged = false;
     }
 
-        public static void onPlayerClone(Object event) {
+        public static void onPlayerClone(ServerPlayer player) {
+        // Called from ENTITY_LOAD — sync zombie data on respawn
+        refreshFormAttributes(player, dataOf(player));
     }
 
-        public static void onLivingDeath(Object event) {
+        public static void onLivingDeath(ServerPlayer player, DamageSource source) {
+        if (!shouldApplyZombieRules(player)) return;
+        var level = (ServerLevel) player.level();
+        var data = dataOf(player);
+        // TODO: Add DeathTrigger.fromSource(source) and call ZombieEvolutionRules.evolve
+        // var trigger = DeathTrigger.fromSource(source);
+        // var result = ZombieEvolutionRules.evolve(level, data.state(), trigger, data);
+        // if (result != null && result.outcome() != null) {
+        //     ZombieEventPublisher.post(new ZombieEvolvedEvent(player, data.state(), result.nextState(), result.outcome()));
+        // }
+    }
+
+    private static PlayerZombieData dataOf(ServerPlayer player) {
+        var svc = dev.molang.iamzombieq.platform.Services.ATTACHMENT;
+        Object raw = svc.get(player, IAmZombieAttachments.PLAYER_ZOMBIE_KEY, (Object) PlayerZombieData.DEFAULT);
+        return raw instanceof PlayerZombieData pzd ? pzd : PlayerZombieData.DEFAULT;
     }
 
     private static boolean shouldApplyZombieRules(Player player) {
