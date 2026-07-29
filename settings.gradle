@@ -19,6 +19,9 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
+        // Loom 本地缓存（必须放在首位，因为 merged jar 只存在本地）
+        maven { name = 'LoomLocalMinecraft'; url = 'file:///' + rootProject.projectDir.toString().replace('\\', '/') + '/.gradle/loom-cache/minecraftMaven' }
+        maven { name = 'LoomGlobalMinecraft'; url = 'file:///' + System.getProperty('user.home').replace('\\', '/') + '/.gradle/caches/fabric-loom/minecraftMaven' }
         // 中国镜像优先 — 腾讯 / 阿里云代理 Maven Central 和通用仓库
         maven { name = 'Tencent'; url = 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
         maven { name = 'Aliyun'; url = 'https://maven.aliyun.com/repository/public/' }
