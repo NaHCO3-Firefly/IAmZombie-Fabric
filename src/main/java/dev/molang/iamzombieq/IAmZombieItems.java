@@ -48,6 +48,7 @@ public final class IAmZombieItems {
                                 .setSwappable(true)
                                 .setDamageOnHurt(true)
                                 .setEquipSound(SoundEvents.ARMOR_EQUIP_LEATHER)
+                                .setAsset(net.minecraft.world.item.equipment.EquipmentAssets.LEATHER)
                                 .build())));
         //HEROBRINE_HEAD = reg("herobrine_head", new StandingAndWallBlockItem(
         //        IAmZombieBlocks.HEROBRINE_HEAD,

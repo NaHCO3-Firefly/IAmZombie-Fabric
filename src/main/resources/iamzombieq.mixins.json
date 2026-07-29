@@ -14,6 +14,7 @@
     "WanderingTraderMixin"
   ],
   "client": [
+    "client.AvatarRendererMixin",
     "client.CreateWorldScreenGameTabMixin",
     "client.DifficultyButtonsMixin"
   ],
