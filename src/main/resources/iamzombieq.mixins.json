@@ -5,7 +5,6 @@
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "DifficultyCommandMixin",
-    "ItemStackMixin",
     "LivingEntityMixin",
     "MinecraftServerMixin",
     "MobMixin",
@@ -15,10 +14,8 @@
     "WanderingTraderMixin"
   ],
   "client": [
-    "client.AvatarRendererMixin",
     "client.CreateWorldScreenGameTabMixin",
-    "client.DifficultyButtonsMixin",
-    "client.LivingEntityRendererSwimMixin"
+    "client.DifficultyButtonsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
