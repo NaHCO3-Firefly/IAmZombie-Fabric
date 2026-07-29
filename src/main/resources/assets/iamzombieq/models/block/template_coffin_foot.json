@@ -13,7 +13,7 @@
       "to": [15, 8, 16],
       "faces": {
         "down": { "texture": "#bottom", "cullface": "down" },
-        "up": { "texture": "#lid" },
+        "up": { "texture": "#lid", "cullface": "up" },
         "north": { "texture": "#side", "cullface": "north" },
         "south": { "texture": "#end" },
         "west": { "texture": "#side" },

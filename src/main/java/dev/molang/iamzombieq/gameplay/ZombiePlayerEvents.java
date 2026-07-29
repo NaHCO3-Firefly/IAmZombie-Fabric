@@ -139,7 +139,7 @@ public final class ZombiePlayerEvents {
         public static void onPlayerTick(ServerPlayer player) {
         if (!shouldApplyZombieRules(player)) return;
         refreshFormAttributes(player, dataOf(player));
-        if (player.tickCount % 20 == 0) {
+        if (player.tickCount % 20 == 0 && isSunBurnTick(player)) {
             igniteSunlightBurn(player);
         }
         // Baby → adult growth
