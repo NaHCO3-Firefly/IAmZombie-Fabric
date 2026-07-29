@@ -5,15 +5,11 @@ import java.util.function.Function;
 import dev.molang.iamzombieq.util.ModIds;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Unit;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.StandingAndWallBlockItem;
-import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.food.FoodProperties;
 
 public final class IAmZombieItems {
@@ -35,15 +31,12 @@ public final class IAmZombieItems {
 
     public static final Item DISGUISE_MASK = register(
             "disguise_mask",
-            props -> new Item(props
-                    .stacksTo(1)
-                    .component(DataComponents.EQUIPPABLE, new Equippable(
-                            EquipmentSlot.HEAD,
-                            Identifier.of(IAmZombieMod.MOD_ID, "disguise_mask"),
-                            Identifier.of(IAmZombieMod.MOD_ID, "textures/models/armor/disguise_mask.png"),
-                            null, null, Unit.INSTANCE, false, false
-                    ))
-                    .durability(15)),
+            props -> {
+                // TODO: MC 26.2 — Equippable now uses a builder; re-add equipable component with correct API
+                return new Item(props
+                        .stacksTo(1)
+                        .durability(15));
+            },
             new Item.Properties()
     );
 
@@ -63,7 +56,7 @@ public final class IAmZombieItems {
 
     private static <T extends Item> T register(String id, Function<Item.Properties, T> factory, Item.Properties props) {
         T item = factory.apply(props);
-        return Registry.register(BuiltInRegistries.ITEM, Identifier.of(IAmZombieMod.MOD_ID, id), item);
+        return Registry.register(BuiltInRegistries.ITEM, Identifier.fromNamespaceAndPath(IAmZombieMod.MOD_ID, id), item);
     }
 
     public static void register() {

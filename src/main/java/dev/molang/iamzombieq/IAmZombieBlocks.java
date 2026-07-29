@@ -30,7 +30,7 @@ public final class IAmZombieBlocks {
     }
 
     private static <T extends Block> T register(String id, T block) {
-        return Registry.register(BuiltInRegistries.BLOCK, Identifier.of(IAmZombieMod.MOD_ID, id), block);
+        return Registry.register(BuiltInRegistries.BLOCK, Identifier.fromNamespaceAndPath(IAmZombieMod.MOD_ID, id), block);
     }
 
     public static void register() {

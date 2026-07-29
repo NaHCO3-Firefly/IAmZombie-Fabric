@@ -238,7 +238,7 @@ public final class ZombiePlayerEvents {
     }
 
     private static void applyFormAttributes(ServerPlayer player, PlayerZombieData data) {
-        applyAddValueModifier(player.getAttribute(Attributes.ARMOR), INNATE_ARMOR_ID, IAmZombieConfig.configuredInnateArmor(data.state().form()));
+        applyAddValueModifier(player.getAttribute(Attributes.ARMOR), INNATE_ARMOR_ID, IAmZombieConfig.configuredInnateArmor.apply(data.state().form()));
         applyAddValueModifier(player.getAttribute(Attributes.SCALE), BABY_SCALE_ID, data.state().size() == dev.molang.iamzombieq.rules.core.ZombieSize.BABY ? -0.5 : 0.0);
         applyMultipliedBaseModifier(player.getAttribute(Attributes.MOVEMENT_SPEED), BABY_SPEED_ID, data.state().size() == dev.molang.iamzombieq.rules.core.ZombieSize.BABY ? 0.5 : 0.0);
         applyAddValueModifier(player.getAttribute(Attributes.SUBMERGED_MINING_SPEED), DROWNED_MINING_ID, data.state().form() == ZombieForm.DROWNED ? 0.8 : 0.0);
@@ -310,7 +310,7 @@ public final class ZombiePlayerEvents {
         if (!IAmZombieConfig.REINFORCEMENTS_ENABLED.get()) {
             return;
         }
-        ZombieForm form = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().form();
+        ZombieForm form = ((dev.molang.iamzombieq.platform.Services.ATTACHMENT.get(player, IAmZombieAttachments.PLAYER_ZOMBIE_KEY, dev.molang.iamzombieq.state.PlayerZombieData.DEFAULT))).state().form();
         if (!ZombieReinforcementRules.hasReinforcementForm(form)) {
             return;
         }
@@ -379,7 +379,7 @@ public final class ZombiePlayerEvents {
             return;
         }
         // A player has no vanilla baby age, so a baby-FORM zombie player must be read from its size state.
-        boolean baby = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().size() == dev.molang.iamzombieq.rules.core.ZombieSize.BABY
+        boolean baby = ((dev.molang.iamzombieq.platform.Services.ATTACHMENT.get(player, IAmZombieAttachments.PLAYER_ZOMBIE_KEY, dev.molang.iamzombieq.state.PlayerZombieData.DEFAULT))).state().size() == dev.molang.iamzombieq.rules.core.ZombieSize.BABY
                 && reinforcement instanceof net.minecraft.world.entity.monster.zombie.Zombie;
         int originX = net.minecraft.util.Mth.floor(player.getX());
         int originY = net.minecraft.util.Mth.floor(player.getY());
@@ -495,7 +495,7 @@ public final class ZombiePlayerEvents {
 
     private static boolean isOwnedSpiderMount(LivingEntity target, ServerPlayer player) {
         return target instanceof net.minecraft.world.entity.monster.spider.Spider spider
-                && spider.getData(IAmZombieAttachments.SPIDER_MOUNT).isOwnedBy(player.getUUID());
+                && ((dev.molang.iamzombieq.platform.Services.ATTACHMENT.get(spider, IAmZombieAttachments.SPIDER_MOUNT_KEY, dev.molang.iamzombieq.state.SpiderMountData.DEFAULT))).isOwnedBy(player.getUUID());
     }
 
     // The giant's passive walk-destruction: crush the SOFT blocks (GIANT_SOFT tag / very-soft fallback) the scaled
@@ -642,10 +642,10 @@ public final class ZombiePlayerEvents {
         }
         // The disguise mask is a cloth rag, not protective headgear: it must NOT block sunlight. Special-case it
         // before the pumpkin/helmet checks so a masked zombie still burns in the sun like a bare-headed one.
-        if (headStack.is(IAmZombieItems.DISGUISE_MASK.get())) {
+        if (headStack.is(IAmZombieItems.DISGUISE_MASK)) {
             return HeadProtection.NONE;
         }
-        if (headStack.is(Items.CARVED_PUMPKIN) || headStack.is(IAmZombieItems.HEROBRINE_HEAD.get())) {
+        if (headStack.is(Items.CARVED_PUMPKIN) || headStack.is(IAmZombieItems.HEROBRINE_HEAD)) {
             return HeadProtection.PUMPKIN;
         }
         return HeadProtection.OTHER_HELMET;

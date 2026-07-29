@@ -64,9 +64,19 @@ public final class IAmZombieConfig {
     public static final Supplier<Integer> ENCHANTED_GOLDEN_APPLE_HUNGER_DURATION_TICKS = () -> 400;
     public static final Supplier<Integer> PUFFERFISH_ABSORPTION_DURATION_TICKS = () -> 200;
     public static final Supplier<Integer> PUFFERFISH_REGENERATION_DURATION_TICKS = () -> 200;
+    public static final Supplier<Integer> PUFFERFISH_REGENERATION_AMPLIFIER = () -> 1;
         public static final Supplier<Integer> CHORUS_SLOW_FALLING_DURATION_TICKS = () -> 200;
     public static final Supplier<Integer> CHORUS_NAUSEA_DURATION_TICKS = () -> 200;
     public static final Supplier<Integer> HONEY_NAUSEA_DURATION_TICKS = () -> 200;
+
+    // ---- Combat ----
+    public static final Supplier<Boolean> REINFORCEMENTS_ENABLED = () -> true;
+    public static final Supplier<Integer> REINFORCEMENT_SPAWN_ATTEMPTS = () -> 50;
+    public static final java.util.function.Function<dev.molang.iamzombieq.rules.core.ZombieForm, Integer> configuredInnateArmor = form -> switch (form) {
+        case HUSK -> 4;
+        case DROWNED, ZOMBIFIED_PIGLIN, NORMAL -> 2;
+        case GIANT -> 0;
+    };
 
     private IAmZombieConfig() {
     }

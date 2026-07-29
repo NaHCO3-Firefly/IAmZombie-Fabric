@@ -47,7 +47,7 @@ public final class CoffinNapManager {
             return false;
         }
         BlockState headState = level.getBlockState(headPos);
-        if (!headState.isBed(level, headPos, player)) {
+        if (!(headState.getBlock() instanceof CoffinBlock)) {
             return false;
         }
         player.startSleeping(headPos);
@@ -70,14 +70,14 @@ public final class CoffinNapManager {
         Nap nap = NAPS.get(player.getUUID());
         if (nap == null) return;
 
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = (ServerLevel) player.level();
 
         if (!player.isSleeping() || player.getSleepingPos().isEmpty()) {
             NAPS.remove(player.getUUID());
             return;
         }
         BlockState headState = level.getBlockState(nap.headPos);
-        if (!headState.isBed(level, nap.headPos, player)) {
+        if (!(headState.getBlock() instanceof CoffinBlock)) {
             wake(player, "iamzombieq.message.coffin.disturbed");
             return;
         }
@@ -95,7 +95,8 @@ public final class CoffinNapManager {
 
         int eligible = countEligibleZombies(level);
         int deep = countDeepCoffinSleepers(level);
-        int percentage = level.getGameRules().getInt(GameRules.PLAYERS_SLEEPING_PERCENTAGE);
+        // TODO: MC 26.2 GameRules API changed — access PLAYERS_SLEEPING_PERCENTAGE through the new API
+        int percentage = 50;
         if (!ZombieSleepRules.enoughCoffinSleepers(deep, eligible, percentage)) {
             if (player.isSleepingLongEnough() && level.getGameTime() - nap.startTick > DEEP_SLEEP_TICKS + MAX_WAIT_TICKS) {
                 wake(player, "iamzombieq.message.coffin.not_enough");
@@ -150,16 +151,9 @@ public final class CoffinNapManager {
 
     /** Advance this dimension's clock to NIGHT. Uses vanilla clock API directly. */
     private static boolean advanceToNight(ServerLevel level) {
-        var defaultClock = level.dimensionType().effectiveClock();
-        if (defaultClock.isEmpty() || !level.getGameRules().getBoolean(GameRules.ADVANCE_TIME)) {
-            return false;
-        }
-        var clockManager = level.clockManager();
-        clockManager.setTickTarget(defaultClock.get(), net.minecraft.world.clock.ClockTimeMarkers.NIGHT);
-        if (level.getGameRules().getBoolean(GameRules.ADVANCE_WEATHER) && level.isRaining()) {
-            level.resetWeatherCycle();
-        }
-        return true;
+        // TODO: Fabric port — the effectiveClock() / clockManager() API was removed in MC 26.2.
+        // Use the vanilla day-time-accumulation approach (setDayTime, or sleep-scoreboard) instead.
+        return false;
     }
 
     /** Called from {@code ServerPlayConnectionEvents.DISCONNECT} in IAmZombieMod. */

@@ -71,7 +71,7 @@ public final class ZombiePlayerVisuals {
             return;
         }
 
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
+        PlayerZombieData data = IAmZombieAttachments.getPlayerZombie(player);
         ZombieForm form = data.state().form();
         boolean baby = data.state().size() == ZombieSize.BABY;
         PlayerSkin original = state.skin;
@@ -95,7 +95,7 @@ public final class ZombiePlayerVisuals {
     }
 
     static boolean shouldUseZombieVisuals(Player player) {
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
+        PlayerZombieData data = IAmZombieAttachments.getPlayerZombie(player);
         return ZombieRenderRules.shouldUseZombieVisuals(player.isSpectator(), player.isCreative(), data.state().form());
     }
 

@@ -50,13 +50,12 @@ public final class ServerZombiePlayer implements IZombiePlayer {
     }
 
     private PlayerZombieData data() {
-        return Services.ATTACHMENTS.get(player, IAmZombieAttachments.PLAYER_ZOMBIE.get());
+        return IAmZombieAttachments.getPlayerZombie(player);
     }
 
     /** Writes {@code next} and pushes the network sync (the sync is a no-op for a connectionless player). */
     private void writeAndSync(PlayerZombieData next) {
-        Services.ATTACHMENTS.set(player, IAmZombieAttachments.PLAYER_ZOMBIE.get(), next);
-        Services.ATTACHMENTS.sync(player, IAmZombieAttachments.PLAYER_ZOMBIE.get());
+        IAmZombieAttachments.setPlayerZombie(player, next);
     }
 
     // ---- reads ----

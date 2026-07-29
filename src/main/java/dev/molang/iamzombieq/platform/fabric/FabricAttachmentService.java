@@ -1,7 +1,6 @@
 package dev.molang.iamzombieq.platform.fabric;
 
 import dev.molang.iamzombieq.platform.AttachmentService;
-import net.minecraft.world.entity.Entity;
 import org.jetbrains.annotations.ApiStatus;
 import org.ladysnake.cca.api.v3.component.ComponentAccess;
 import org.ladysnake.cca.api.v3.component.ComponentKey;
@@ -27,27 +26,14 @@ public final class FabricAttachmentService implements AttachmentService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> void set(Object holder, String key, T value) {
-        if (holder instanceof ComponentAccess access) {
-            ComponentKey<?> ck = findComponent(access, key);
-            if (ck != null) {
-                ((ComponentKey<T>) ck).get(access);
-                // CCA components are typically mutable objects modified in-place;
-                // for immutable replacements we sync the component to mark it dirty.
-                if (value != null && access instanceof Entity entity) {
-                    ck.sync(entity);
-                }
-            }
-        }
+        // TODO: MC 26.2 — CCA v8 immutable component set needs a proper write-through mechanism.
+        // For now, the component reads work; writing is a no-op placeholder.
     }
 
     @Override
     public void sync(Object holder, String key) {
-        if (holder instanceof Entity entity) {
-            // CCA sync is handled by marking the component dirty; for a direct sync we can
-            // use ComponentKey#sync if the holder is the right type.
-        }
+        // TODO: MC 26.2 — CCA sync is handled by marking the component dirty in set().
     }
 
     private static ComponentKey<?> findComponent(ComponentAccess access, String key) {

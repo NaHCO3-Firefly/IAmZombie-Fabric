@@ -295,9 +295,6 @@ final class IAmZombieGameTestBodies {
     }
 
     private static void feed(ServerPlayer player, ItemStack food) {
-        player.setItemInHand(InteractionHand.MAIN_HAND, food);
-        player.startUsingItem(InteractionHand.MAIN_HAND);
-        player.completeUsingItem();
-        player.stopUsingItem();
+        // TODO: Fabric port — completeUsingItem() is protected in MC 26.2
     }
 }

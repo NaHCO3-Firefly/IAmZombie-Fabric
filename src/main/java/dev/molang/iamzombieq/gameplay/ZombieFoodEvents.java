@@ -162,40 +162,10 @@ public final class ZombieFoodEvents {
         restoreGoldenAppleEffects(player, preserved, elapsedTicks);
     }
 
-    private static void applyZombieEffects(Player player, FoodRule rule, String eatenId) {
-        // 1) Positive buffs from the rule's data table.
-        for (EffectSpec spec : rule.buffs()) {
-            player.addEffect(spec.toInstance());
-        }
-        // 2) Negative debuffs from the rule's data table (sweet Slowness, golden-apple Hunger, chorus/honey Nausea).
-        for (EffectSpec spec : rule.debuffs()) {
-            player.addEffect(spec.toInstance());
-        }
-        // 3) Poisonous potato's random small positive: chosen at runtime, so it cannot be a static EffectSpec.
-        if ("minecraft:poisonous_potato".equals(eatenId)) {
-            applyRandomSmallPositive(player);
-        }
-        // 4) Super rotten flesh: baby -> adult. (The ZombieAteEvent for this eat is fired by the caller —
-        // onItemUseFinished — with the REAL eaten stack, covering this branch along with every other zombie-food
-        // eat; it is no longer fired here with an EMPTY stack.)
-        if (rule.restoresBabyState()) {
-            PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-            if (data.state().size() == ZombieSize.BABY) {
-                player.setData(IAmZombieAttachments.PLAYER_ZOMBIE, data.withState(data.state().asAdult()));
-                player.syncData(IAmZombieAttachments.PLAYER_ZOMBIE);
-            }
-        }
+    private static void applyZombieEffects(Player player, FoodRule rule, String eatenId) { // TODO: Fabric port
     }
 
-    private static void applyRandomSmallPositive(Player player) {
-        int dur = IAmZombieConfig.POISONOUS_POTATO_POSITIVE_DURATION_TICKS.get();
-        int pick = player.getRandom().nextInt(3);
-        Holder<MobEffect> effect = switch (pick) {
-            case 0 -> MobEffects.SPEED;
-            case 1 -> MobEffects.HASTE;
-            default -> MobEffects.LUCK;
-        };
-        player.addEffect(new MobEffectInstance(effect, dur, 0));
+    private static void applyRandomSmallPositive(Player player) { // TODO: Fabric port
     }
 
     private static ZombieFoodRules.PreservedFoodPunishments preserveExistingFoodPunishments(Player player) {

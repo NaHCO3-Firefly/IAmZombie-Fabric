@@ -106,7 +106,7 @@ public final class RideHelper {
         if (rider.isSpectator()) {
             return false;
         }
-        return rider.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().size() == ZombieSize.BABY;
+        return IAmZombieAttachments.getPlayerZombie(rider).state().size() == ZombieSize.BABY;
     }
 
     /**

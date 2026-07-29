@@ -44,7 +44,7 @@ public enum MountCapability {
         @Override
         boolean isControlledBy(Mob mob, Player rider) {
             return mob instanceof Spider spider
-                    && spider.getData(IAmZombieAttachments.SPIDER_MOUNT).isOwnedBy(rider.getUUID());
+                    && IAmZombieAttachments.getSpiderMount(spider).isOwnedBy(rider.getUUID());
         }
     },
     CHICKEN(MountKind.CHICKEN) {

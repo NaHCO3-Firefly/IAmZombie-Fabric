@@ -12,7 +12,7 @@ import net.minecraft.world.entity.MobCategory;
 public final class IAmZombieEntities {
     public static final EntityType<HerobrineEntity> HEROBRINE = Registry.register(
             BuiltInRegistries.ENTITY_TYPE,
-            Identifier.of(IAmZombieMod.MOD_ID, "herobrine"),
+            Identifier.fromNamespaceAndPath(IAmZombieMod.MOD_ID, "herobrine"),
             EntityType.Builder.of(HerobrineEntity::new, MobCategory.MONSTER)
                     .sized(0.6F, 1.8F)
                     .eyeHeight(1.62F)
@@ -20,7 +20,7 @@ public final class IAmZombieEntities {
                     .updateInterval(2)
                     .noSave()
                     .noLootTable()
-                    .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.of(IAmZombieMod.MOD_ID, "herobrine")))
+                    .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(IAmZombieMod.MOD_ID, "herobrine")))
     );
 
     private IAmZombieEntities() {

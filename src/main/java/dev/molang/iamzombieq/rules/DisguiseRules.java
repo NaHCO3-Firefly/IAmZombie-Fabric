@@ -33,6 +33,6 @@ public final class DisguiseRules {
      * disguise.
      */
     public static boolean isDisguisedAsHuman(ItemStack head) {
-        return head != null && !head.isEmpty() && head.is(IAmZombieItems.DISGUISE_MASK.get());
+        return head != null && !head.isEmpty() && head.is(IAmZombieItems.DISGUISE_MASK);
     }
 }

@@ -3,6 +3,7 @@ package dev.molang.iamzombieq.client;
 import dev.molang.iamzombieq.IAmZombieEntities;
 import dev.molang.iamzombieq.entity.HerobrineEntity;
 import dev.molang.iamzombieq.util.ModIds;
+import dev.molang.iamzombieq.client.HerobrineRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -19,8 +20,8 @@ public final class IAmZombieClient implements ClientModInitializer {
     private static int herobrinePresenceCount;
     private static int heartbeatCooldown;
     private static int joltVignetteTicks;
-    private static final Identifier HEARTBEAT_ID = Identifier.of("minecraft", "warden_heartbeat");
-    private static final Identifier JOLT_STINGER_ID = Identifier.of("minecraft", "warden_roar");
+    private static final Identifier HEARTBEAT_ID = Identifier.fromNamespaceAndPath("minecraft", "warden_heartbeat");
+    private static final Identifier JOLT_STINGER_ID = Identifier.fromNamespaceAndPath("minecraft", "warden_roar");
 
     @Override
     public void onInitializeClient() {

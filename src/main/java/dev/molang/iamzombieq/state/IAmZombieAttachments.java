@@ -33,6 +33,15 @@ public final class IAmZombieAttachments {
     }
 
     /**
+     * Called by {@code IAmZombieRegistries.register()} during mod initialization.
+     * No-op in the in-memory attachment regime; a real CCA-based implementation would
+     * register component keys here.
+     */
+    public static void register() {
+        // TODO: register CCA ComponentKey instances here when migrating to Cardinal Components
+    }
+
+    /**
      * Initialize attachment/component registration.
      * Called during mod initialization to register all components with the backing store.
      */

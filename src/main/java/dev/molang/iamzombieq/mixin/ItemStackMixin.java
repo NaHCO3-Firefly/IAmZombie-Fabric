@@ -39,7 +39,7 @@ abstract class ItemStackMixin {
         if (!stack.isDamageableItem() || !stack.is(ItemTags.PIGLIN_LOVED)) {
             return amount;
         }
-        if (player.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().form() != ZombieForm.ZOMBIFIED_PIGLIN) {
+        if (IAmZombieAttachments.getPlayerZombie(player).state().form() != ZombieForm.ZOMBIFIED_PIGLIN) {
             return amount;
         }
 

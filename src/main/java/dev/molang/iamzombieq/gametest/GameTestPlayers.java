@@ -39,7 +39,7 @@ final class GameTestPlayers {
         ServerLevel level = helper.getLevel();
         GameProfile profile = new GameProfile(UUID.randomUUID(), "iamzombieq-test-" + UUID.randomUUID());
         MinecraftServer server = level.getServer();
-        ServerPlayer player = new ServerPlayer(server, level, profile);
+        ServerPlayer player = new ServerPlayer(server, level, profile, net.minecraft.server.level.ClientInformation.createDefault());
 
         // Survival, so isCreative()-gated branches in the handlers behave as for an ordinary zombie player.
         player.setGameMode(GameType.SURVIVAL);

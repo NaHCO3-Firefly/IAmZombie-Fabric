@@ -52,7 +52,7 @@ final class IAmZombieMobSleepGameTestBodies {
 
     static void mobIronGolemNotFooledByMask(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.spawnZombieFakePlayer(helper, ZombieForm.NORMAL, ZombieSize.ADULT);
-        player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(IAmZombieItems.DISGUISE_MASK.get()));
+        player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(IAmZombieItems.DISGUISE_MASK));
         IronGolem golem = helper.spawn(EntityTypes.IRON_GOLEM, new BlockPos(2, 2, 2));
 
         if (!clearedTarget(golem, player)) {
@@ -150,7 +150,7 @@ final class IAmZombieMobSleepGameTestBodies {
         BlockPos footRel = new BlockPos(2, 2, 2);
         BlockPos headRel = new BlockPos(2, 2, 1);
         Direction facing = Direction.NORTH;
-        Block coffin = dev.molang.iamzombieq.IAmZombieBlocks.COFFIN.get();
+        Block coffin = dev.molang.iamzombieq.IAmZombieBlocks.COFFIN;
         helper.setBlock(footRel, coffin.defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, facing)
                 .setValue(dev.molang.iamzombieq.block.CoffinBlock.PART, BedPart.FOOT));
@@ -164,7 +164,7 @@ final class IAmZombieMobSleepGameTestBodies {
             int coffins = 0;
             for (net.minecraft.world.entity.item.ItemEntity item :
                     helper.getEntities(EntityTypes.ITEM, footRel, 4.0)) {
-                if (item.getItem().is(IAmZombieItems.COFFIN.get())) {
+                if (item.getItem().is(IAmZombieItems.COFFIN)) {
                     coffins += item.getItem().getCount();
                 }
             }
@@ -211,7 +211,7 @@ final class IAmZombieMobSleepGameTestBodies {
         helper.setBlock(doorRel, state);
         BlockPos doorAbs = helper.absolutePos(doorRel);
         // In Fabric, the break speed boost is applied via mixin on Player.getDestroySpeed().
-        return player.getDestroySpeed(state, doorAbs);
+        return player.getDestroySpeed(state);
     }
 
     // -------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 package dev.molang.iamzombieq;
 
+import dev.molang.iamzombieq.state.IAmZombieAttachments;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 
 public final class IAmZombieRegistries {
@@ -10,7 +11,7 @@ public final class IAmZombieRegistries {
         IAmZombieBlocks.register();
         IAmZombieItems.register();
         IAmZombieEntities.register();
-        IAmZombieAttachments.register();
+        IAmZombieAttachments.initialize();
         // Attribute registration
         FabricDefaultAttributeRegistry.register(
                 IAmZombieEntities.HEROBRINE,

@@ -110,39 +110,7 @@ public final class ZombieMountEvents {
     private static void handleSpiderInteract(Object event, Player player, Spider spider) {
     }
 
-    private static void handleSpiderFood(Player player, Spider spider, ItemStack stack, SpiderMountData data) {
-        if (!data.hasOwner()) {
-            // B1: taming is no longer instant. Each feed adds taming progress (food-dependent) and the
-            // spider only becomes owned once progress reaches the threshold. Always consume the food + give
-            // per-feed feedback so the interaction is never silently dropped.
-            String foodId = spiderFoodId(stack);
-            int nextProgress = ZombieMountRules.spiderTameProgressAfterFeed(data.tameProgress(), foodId);
-            stack.consume(1, player);
-            spider.playSound(SoundEvents.GENERIC_EAT.value(), 1.0F, 1.0F);
-            spider.setTarget(null);
-
-            if (ZombieMountRules.spiderIsTamed(nextProgress)) {
-                spider.setData(IAmZombieAttachments.SPIDER_MOUNT, SpiderMountData.ownedBy(player.getUUID()));
-                spider.setPersistenceRequired();
-                player.sendSystemMessage(Component.translatable("iamzombieq.message.mount.spider_tamed"));
-            } else {
-                spider.setData(IAmZombieAttachments.SPIDER_MOUNT, data.withProgress(nextProgress));
-                int percent = nextProgress * 100 / ZombieMountRules.SPIDER_TAME_PROGRESS_THRESHOLD;
-                player.sendSystemMessage(Component.translatable("iamzombieq.message.mount.spider_taming", percent));
-            }
-            return;
-        }
-
-        if (!data.isOwnedBy(player.getUUID())) {
-            player.sendSystemMessage(Component.translatable("iamzombieq.message.mount.spider_owned"));
-            return;
-        }
-
-        float heal = ZombieMountRules.spiderHealAmount(spiderFoodId(stack));
-        if (heal > 0.0F && spider.getHealth() < spider.getMaxHealth()) {
-            spider.heal(heal);
-            stack.consume(1, player);
-        }
+    private static void handleSpiderFood(Player player, Spider spider, ItemStack stack, SpiderMountData data) { // TODO: Fabric port
     }
 
     private static boolean isSpiderFood(ItemStack stack) {
@@ -233,8 +201,8 @@ public final class ZombieMountEvents {
         return isZombiePlayer(player) && zombieSize(player) == ZombieSize.BABY;
     }
 
-    private static ZombieSize zombieSize(Player player) {
-        return player.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().size();
+    private static ZombieSize zombieSize(Player player) { // TODO: Fabric port
+        return ZombieSize.ADULT;
     }
 
     private static MountKind mountKindFor(Entity mounted) {
@@ -265,8 +233,8 @@ public final class ZombieMountEvents {
         return MountKind.OTHER;
     }
 
-    private static boolean spiderOwnedBy(Entity mounted, Player player) {
-        return mounted instanceof Spider spider && spider.getData(IAmZombieAttachments.SPIDER_MOUNT).isOwnedBy(player.getUUID());
+    private static boolean spiderOwnedBy(Entity mounted, Player player) { // TODO: Fabric port
+        return false;
     }
 
     private static boolean isRideableBigZombie(Zombie zombie) {
@@ -342,59 +310,11 @@ public final class ZombieMountEvents {
     /** A target the ridden mount may attack: alive, not the rider, not the mount itself, not the rider's own
      *  tamed spider. (Rider-driven targets intentionally allow fellow zombies -- if the rider hits one, the mount
      *  helps -- unlike the proximity scan, which excludes fellow zombies.) */
-    private static boolean isMountAttackable(Zombie zombie, Player rider, LivingEntity candidate) {
-        return candidate != null
-                && candidate != rider
-                && candidate != zombie
-                && candidate.isAlive()
-                && !(candidate instanceof Spider spider
-                        && spider.getData(IAmZombieAttachments.SPIDER_MOUNT).isOwnedBy(rider.getUUID()));
+    private static boolean isMountAttackable(Zombie zombie, Player rider, LivingEntity candidate) { // TODO: Fabric port
+        return false;
     }
 
-    private static LivingEntity findMountedBigZombieTarget(ServerLevel level, Zombie zombie, Player rider) {
-        AABB area = zombie.getBoundingBox().inflate(ZombieMountRules.BIG_ZOMBIE_AUTO_ATTACK_RANGE);
-
-        // Single broad scan, classified into the same three tiers as before. Priority is unchanged:
-        // nearest villager > nearest iron golem > nearest other-monster. The candidate predicate keeps the
-        // shared filters (exclude the rider, isAlive, zombie.canAttack); the per-tier checks below reproduce
-        // the previous per-class predicates (the broad "other monster" tier still excludes fellow zombies and
-        // the rider's own tamed spider mount).
-        LivingEntity nearestVillager = null;
-        double nearestVillagerDistance = Double.MAX_VALUE;
-        LivingEntity nearestGolem = null;
-        double nearestGolemDistance = Double.MAX_VALUE;
-        LivingEntity nearestMonster = null;
-        double nearestMonsterDistance = Double.MAX_VALUE;
-
-        for (LivingEntity candidate : level.getEntitiesOfClass(LivingEntity.class, area, candidate ->
-                candidate != rider && candidate.isAlive() && zombie.canAttack(candidate))) {
-            double distance = zombie.distanceToSqr(candidate);
-            if (candidate instanceof AbstractVillager) {
-                if (distance < nearestVillagerDistance) {
-                    nearestVillager = candidate;
-                    nearestVillagerDistance = distance;
-                }
-            } else if (candidate instanceof IronGolem) {
-                if (distance < nearestGolemDistance) {
-                    nearestGolem = candidate;
-                    nearestGolemDistance = distance;
-                }
-            } else if (candidate instanceof Monster
-                    && !(candidate instanceof Zombie)
-                    && !(candidate instanceof Spider spider && spider.getData(IAmZombieAttachments.SPIDER_MOUNT).isOwnedBy(rider.getUUID()))) {
-                if (distance < nearestMonsterDistance) {
-                    nearestMonster = candidate;
-                    nearestMonsterDistance = distance;
-                }
-            }
-        }
-
-        if (nearestVillager != null) {
-            return nearestVillager;
-        }
-        if (nearestGolem != null) {
-            return nearestGolem;
-        }
-        return nearestMonster;
+    private static LivingEntity findMountedBigZombieTarget(ServerLevel level, Zombie zombie, Player rider) { // TODO: Fabric port
+        return null;
     }
 }

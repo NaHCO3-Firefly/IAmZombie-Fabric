@@ -251,6 +251,6 @@ final class IAmZombieMountGameTestBodies {
     }
 
     private static void interact(ServerPlayer player, net.minecraft.world.entity.Entity target) {
-        player.interactOn(target, InteractionHand.MAIN_HAND);
+        player.interactOn(target, InteractionHand.MAIN_HAND, target.position());
     }
 }

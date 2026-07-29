@@ -65,7 +65,7 @@ public final class ZombiePlayerShapeEntities {
     }
 
     private CachedShape cachedShapeFor(AbstractClientPlayer player) {
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
+        PlayerZombieData data = IAmZombieAttachments.getPlayerZombie(player);
         ZombieForm form = data.state().form();
         CachedShape cached = shapes.get(player.getUUID());
         // `cached.entity == null` MUST precede `.level()` so || short-circuits: createShape (EntityType.create) is

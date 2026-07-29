@@ -9,6 +9,7 @@ import dev.molang.iamzombieq.rules.DisguiseRules;
 import dev.molang.iamzombieq.rules.core.ZombieForm;
 import dev.molang.iamzombieq.rules.ZombieMobTargetingRules;
 import dev.molang.iamzombieq.state.IAmZombieAttachments;
+import dev.molang.iamzombieq.state.PlayerZombieData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -185,7 +186,7 @@ public final class ZombieMobTargetingEvents {
                     mob.setLastHurtByMob(null);
                     if (mob instanceof NeutralMob neutral) {
                         neutral.setPersistentAngerTarget(null);
-                        neutral.setPersistentAngerEndTime(NeutralMob.NO_ANGER_END_TIME);
+                        neutral.setPersistentAngerEndTime(-1);
                     }
                 }
                 return false;
