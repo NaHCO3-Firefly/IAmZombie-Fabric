@@ -14,7 +14,6 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.StandingAndWallBlockItem;
 import net.minecraft.world.item.equipment.Equippable;
-import net.minecraft.world.item.equipment.EquipmentModel;
 import net.minecraft.world.food.FoodProperties;
 
 public final class IAmZombieItems {
@@ -40,11 +39,9 @@ public final class IAmZombieItems {
                     .stacksTo(1)
                     .component(DataComponents.EQUIPPABLE, new Equippable(
                             EquipmentSlot.HEAD,
-                            EquipmentModel.HUMANOID_HEAD,
                             Identifier.of(IAmZombieMod.MOD_ID, "disguise_mask"),
-                            null, null, null,
-                            Unit.INSTANCE,
-                            false, false
+                            Identifier.of(IAmZombieMod.MOD_ID, "textures/models/armor/disguise_mask.png"),
+                            null, null, Unit.INSTANCE, false, false
                     ))
                     .durability(15)),
             new Item.Properties()

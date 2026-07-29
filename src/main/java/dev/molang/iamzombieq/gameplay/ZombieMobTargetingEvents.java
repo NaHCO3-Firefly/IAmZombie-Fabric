@@ -9,11 +9,9 @@ import dev.molang.iamzombieq.rules.DisguiseRules;
 import dev.molang.iamzombieq.rules.core.ZombieForm;
 import dev.molang.iamzombieq.rules.ZombieMobTargetingRules;
 import dev.molang.iamzombieq.state.IAmZombieAttachments;
-import dev.molang.iamzombieq.state.PlayerZombieData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -157,39 +155,30 @@ public final class ZombieMobTargetingEvents {
         return false;
     }
 
-        public static void onChangeTarget(Object event) {
-        LivingEntity mob = event.getEntity();
-        LivingEntity newTarget = event.getNewAboutToBeSetTarget();
-
+    /**
+     * Called when a mob tries to target a player. In Fabric, this is invoked via mixin on
+     * {@code Mob.setTarget()}. Returns whether the target should be accepted (true) or denied (false).
+     */
+    public static boolean onChangeTarget(Mob mob, LivingEntity newTarget) {
         // N9: a Drowned's thrown trident can clip another Drowned; do not let drowned start fighting each other
         // from that friendly fire. Genuine melee retaliation (the target is this mob's last attacker) is kept.
         boolean drownedRetaliating = mob.getLastHurtByMob() == newTarget;
         if (ZombieMobTargetingRules.isInterDrownedFriendlyFire(mob, newTarget, drownedRetaliating)) {
-            event.setNewAboutToBeSetTarget(null);
-            return;
+            return false;
         }
 
         if (!IAmZombieConfig.UNDEAD_IGNORE_ZOMBIE_PLAYER.get()) {
-            return;
+            return true;
         }
         if (!(newTarget instanceof Player player) || !isZombiePlayer(player)) {
-            return;
+            return true;
         }
 
         if (!(mob.level() instanceof ServerLevel serverLevel)) {
-            return;
+            return true;
         }
 
-        // RC4-sweep (Option B): if this mob is a freshly-converted kin still inside its conversion grace window and
-        // the target about to be set is its converting player, treat it as the SAME swing's Sweeping-Edge sweep
-        // (retaliation the player never intended) and neutralise it. NON-CONSUMING: the marker survives the whole
-        // window (removed only on expiry below) because the kin's artifact-independent NearestAttackableTargetGoal
-        // can acquire the player a tick BEFORE the sweep seeds lastHurtByMob -- consuming on first use would burn the
-        // marker with no artifact present and let the real sweep retaliation slip through. Clearing lastHurtByMob,
-        // GUARDED to the converter (so a third party's revenge record / sweep-derived anger is never erased), flips
-        // `retaliating` false so once the window lapses the IGNORED deny-list permanently denies the unconditional
-        // re-acquisition; for a NeutralMob the sweep-derived persistent anger is cleared too. Genuine later
-        // retaliation is preserved -- a real post-window strike re-seeds lastHurtByMob.
+        // RC4-sweep grace window check
         ConversionGrace grace = CONVERSION_GRACE.get(mob.getUUID());
         if (grace != null && grace.convertingPlayer().equals(player.getUUID())) {
             if (serverLevel.getGameTime() <= grace.expiryGameTime()) {
@@ -200,26 +189,12 @@ public final class ZombieMobTargetingEvents {
                         neutral.setPersistentAngerEndTime(NeutralMob.NO_ANGER_END_TIME);
                     }
                 }
-                event.setNewAboutToBeSetTarget(null);
-                return;
+                return false;
             }
             CONVERSION_GRACE.remove(mob.getUUID());
         }
 
-        // A2 player-grudge RECORD/REFRESH (sticky retaliation) -- the ONLY place a grudge is created. A grudge is
-        // BORN only on a genuine hit (trueHit: getLastHurtByMob()==player) and then SELF-REFRESHES while still live:
-        // every tick the mob's vanilla TargetGoal.canContinueToUse re-asserts setTarget(player), onChangeTarget fires
-        // again, and an already-live grudge (grudged) re-arms the window. So the grudge survives for as long as the
-        // mob actually keeps the player as its target and expires only GRUDGE_TICKS AFTER its goal stops targeting the
-        // player (vanilla drops the target on escape / past follow-range / ~300t unseen) -- a forgive-tail, NOT a
-        // fixed timer from the last hit. This is the vanilla-faithful "chase until you escape, then forgive" feel.
-        // Read grudged BEFORE the put: the refresh must never bootstrap a grudge from nothing, so the FIRST put on any
-        // mob necessarily has grudged=false and therefore REQUIRES trueHit. Placed AFTER the CONVERSION_GRACE
-        // early-return above: inside a live grace window that branch already returned AND nulled lastHurtByMob, so a
-        // grace-suppressed conversion-swing sweep can never reach here (trueHit=false) and a freshly-converted kin has
-        // no prior grudge (grudged=false) -- it can never start one (RC4-safe by construction). NOT gated on
-        // newTarget==player. Bounded by vanilla's own target-drop: the grudge only ALLOWS a target, it cannot force a
-        // goal to keep one, so the every-tick refresh loop ends the moment vanilla drops the player.
+        // A2 player-grudge RECORD/REFRESH
         boolean trueHit = mob.getLastHurtByMob() == player;
         boolean grudged = hasLiveGrudge(mob, player, serverLevel);
         if (trueHit || grudged) {
@@ -228,19 +203,14 @@ public final class ZombieMobTargetingEvents {
                     new Grudge(player.getUUID(), serverLevel.getGameTime() + GRUDGE_TICKS));
         }
 
-        // Preserve retaliation: a mob the player just struck may fight back -- now also a mob bearing a LIVE
-        // player-grudge (it genuinely attacked the player and is still engaged), so it stays engaged for as long as
-        // its own goal keeps the player, plus the GRUDGE_TICKS forgive-tail after it loses the player. Reuse the
-        // trueHit/grudged reads above (grudged captured PRE-refresh) -- do not re-read hasLiveGrudge here, which would
-        // observe the just-written refresh and is redundant.
         boolean retaliating = trueHit || grudged;
-        // Preserve neutral-mob anger (an angered zombified piglin pack, a provoked iron golem, …).
         boolean angeredNeutral = mob instanceof NeutralMob neutral && neutral.isAngryAt(player, serverLevel);
 
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
+        PlayerZombieData data = IAmZombieAttachments.getPlayerZombie(player);
         if (ZombieMobTargetingRules.shouldIgnoreZombiePlayer(mob, player, data, retaliating, angeredNeutral)) {
-            event.setNewAboutToBeSetTarget(null);
+            return false;
         }
+        return true;
     }
 
     /**
@@ -253,15 +223,18 @@ public final class ZombieMobTargetingEvents {
      * is the same {@link ZombieMobTargetingRules#attacksZombiePlayer} predicate the deny-list uses (so the seeded
      * target is never cancelled).
      */
-        public static void seedAttackersOntoZombiePlayer(Object event) {
+    /**
+     * Seeds attackers onto a zombie player from nearby targetless mobs.
+     * Called periodically from server tick events.
+     */
+    public static void seedAttackersOntoZombiePlayer(ServerPlayer player) {
         if (!IAmZombieConfig.UNDEAD_IGNORE_ZOMBIE_PLAYER.get()
-                || !(event.getEntity() instanceof ServerPlayer player)
                 || !isZombiePlayer(player)
                 || player.tickCount % ATTACKER_SEED_INTERVAL_TICKS != 0
                 || !(player.level() instanceof ServerLevel level)) {
             return;
         }
-        ZombieForm form = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().form();
+        ZombieForm form = IAmZombieAttachments.getPlayerZombie(player).state().form();
         AABB area = player.getBoundingBox().inflate(ATTACKER_SEED_RADIUS);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area, candidate -> shouldSeedAttacker(candidate, form))) {
             if (mob instanceof Axolotl) {
@@ -292,17 +265,19 @@ public final class ZombieMobTargetingEvents {
      * the offender is a live Drowned. The search is bounded to {@link #DROWNED_RALLY_RADIUS} blocks and only
      * recruits targetless Drowned, so it never steals an in-progress fight and stays cheap.
      */
-        public static void onZombieHurtByDrownedTrident(Object event) {
+    /**
+     * Called when a Zombie is hurt by a Drowned's trident. Nearby Drowned rally to attack the offender.
+     */
+    public static void onZombieHurtByDrownedTrident(net.minecraft.world.entity.monster.zombie.Zombie zombie, DamageSource source) {
         // Victim must be a plain Zombie but NOT a Drowned (N9 owns inter-drowned cases).
-        if (!(event.getEntity() instanceof net.minecraft.world.entity.monster.zombie.Zombie zombie)
-                || zombie instanceof Drowned) {
+        if (zombie instanceof Drowned) {
             return;
         }
         if (!(zombie.level() instanceof ServerLevel level)) {
             return;
         }
         // The trident's owner (causing entity) must be a Drowned other than the victim.
-        Entity offendingEntity = event.getSource().getEntity();
+        Entity offendingEntity = source.getEntity();
         if (!(offendingEntity instanceof Drowned offender) || offender == zombie) {
             return;
         }
@@ -321,24 +296,22 @@ public final class ZombieMobTargetingEvents {
      * from running. {@link AbstractVillager} is the common supertype matched here, covering both {@code Villager}
      * and {@code WanderingTrader}.
      */
-        public static void onMerchantInteract(Object event) {
-        if (event.getHand() != InteractionHand.MAIN_HAND) {
-            return;
+    /**
+     * Check if a merchant interaction should be cancelled for an undisguised zombie player.
+     * Returns true if the interaction should be cancelled.
+     */
+    public static boolean onMerchantInteract(Player player, net.minecraft.world.entity.Entity target) {
+        if (!(target instanceof AbstractVillager)) {
+            return false;
         }
-        if (!(event.getTarget() instanceof AbstractVillager)) {
-            return;
-        }
-        Player player = event.getEntity();
         if (!isZombiePlayer(player)) {
-            return;
+            return false;
         }
         if (DisguiseRules.isDisguisedAsHuman(player.getItemBySlot(EquipmentSlot.HEAD))) {
-            return;
+            return false;
         }
-
-        // Not disguised: a zombie cannot trade. Swallow the interaction so the trade screen never opens.
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
+        // Not disguised: a zombie cannot trade. Cancel the interaction.
+        return true;
     }
 
     /**
@@ -346,15 +319,17 @@ public final class ZombieMobTargetingEvents {
      * {@link Object} fires server-side from {@code AbstractVillager.notifyTrade} once a trade
      * result is taken, and carries the trading player, so it is the precise "successful trade" hook.
      */
-        public static void onTradeWithVillager(Object event) {
-        if (!(event.getEntity() instanceof Player player) || !isZombiePlayer(player)) {
+    /**
+     * Spend one point of disguise mask durability after a successful trade.
+     */
+    public static void onTradeWithVillager(Player player) {
+        if (!isZombiePlayer(player)) {
             return;
         }
         ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
         if (!DisguiseRules.isDisguisedAsHuman(head) || !head.isDamageableItem()) {
             return;
         }
-        // hurtAndBreak no-ops off-server and fires the proper head-slot break hook; spend exactly one point.
         head.hurtAndBreak(1, player, EquipmentSlot.HEAD);
     }
 
@@ -362,13 +337,18 @@ public final class ZombieMobTargetingEvents {
     // game-tick (dropped lazily in onChangeTarget / hasLiveGrudge when expired, evicted by their caps), but a player
     // who logs out, or a server stop, must not strand entries naming that player. Mirrors the
     // ZombieFoodEvents/ZombieMountEvents transient-map cleanup.
-        public static void onPlayerLoggedOut(Object event) {
-        UUID playerId = event.getEntity().getUUID();
+    /**
+     * Clean up transient state for a logged-out player.
+     */
+    public static void onPlayerLoggedOut(UUID playerId) {
         CONVERSION_GRACE.values().removeIf(grace -> grace.convertingPlayer().equals(playerId));
         PLAYER_GRUDGE.values().removeIf(grudge -> grudge.grudgePlayer().equals(playerId));
     }
 
-        public static void onServerStopped(Object event) {
+    /**
+     * Clean up all transient state on server stop.
+     */
+    public static void onServerStopped() {
         CONVERSION_GRACE.clear();
         PLAYER_GRUDGE.clear();
     }

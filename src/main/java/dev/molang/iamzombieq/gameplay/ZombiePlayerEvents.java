@@ -178,7 +178,7 @@ public final class ZombiePlayerEvents {
         }
     }
 
-        public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
+        public static void onBreakSpeed(Object event) {
         if (!shouldApplyZombieRules(event.getEntity())) {
             return;
         }
@@ -199,7 +199,7 @@ public final class ZombiePlayerEvents {
         }
     }
 
-        public static void onIncomingDamage(net.neoforged.neoforge.event.entity.living.Object event) {
+        public static void onIncomingDamage(Object event) {
         if (replaceSunlightFireDamage(event)) {
             return;
         }
@@ -232,7 +232,7 @@ public final class ZombiePlayerEvents {
         }
     }
 
-        public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        public static void onPlayerLoggedIn(Object event) {
         if (event.getEntity() instanceof ServerPlayer player && shouldApplyZombieRules(player)) {
             boolean firstZombieAttach = !player.hasData(IAmZombieAttachments.PLAYER_ZOMBIE);
             PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
@@ -759,10 +759,10 @@ public final class ZombiePlayerEvents {
         return destroyed;
     }
 
-        public static void onGiantSwing(PlayerInteractEvent.LeftClickBlock event) {
+        public static void onGiantSwing(Object event) {
         // The giant's active 一拳一大片: a left-click on a block within its long reach blasts a cube centred on the
         // aimed block. Server-authoritative (ServerPlayer only), gated to the START of the click and a cooldown.
-        if (event.getAction() != PlayerInteractEvent.LeftClickBlock.Action.START
+        if (event.getAction() != Object.Action.START
                 || !(event.getEntity() instanceof ServerPlayer player)
                 || !(player.level() instanceof ServerLevel level)
                 || !shouldApplyZombieRules(player)
@@ -851,7 +851,7 @@ public final class ZombiePlayerEvents {
         );
     }
 
-    private static boolean replaceSunlightFireDamage(net.neoforged.neoforge.event.entity.living.Object event) {
+    private static boolean replaceSunlightFireDamage(Object event) {
         if (!(event.getEntity() instanceof ServerPlayer player)
                 || !shouldApplyZombieRules(player)
                 || event.getAmount() <= 0.0F) {

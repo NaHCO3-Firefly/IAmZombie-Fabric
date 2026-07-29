@@ -2,7 +2,6 @@ package dev.molang.iamzombieq.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import dev.molang.iamzombieq.client.ZombiePlayerRenderReplacement;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -15,8 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Vanilla mob renderers (unlike the player's AvatarRenderer) apply no swimming/crawl tilt. The third-person
  * zombie-player "shape" is drawn by a vanilla mob renderer, so without this it stays upright while the player
- * swims. This re-adds the swim tilt — but ONLY for shape render states (tagged by ZombiePlayerRenderReplacement
- * .SHAPE_SWIM_TILT); real mobs get a fresh, untagged render state and are unaffected. Mirrors the swimming branch
+ * swims. This re-adds the swim tilt for shape render states. Mirrors the swimming branch
  * of AvatarRenderer.setupRotations.
  */
 @Mixin(LivingEntityRenderer.class)
@@ -29,8 +27,7 @@ abstract class LivingEntityRendererSwimMixin {
             float entityScale,
             CallbackInfo callback
     ) {
-        if (!(state instanceof HumanoidRenderState humanoid)
-                || !Boolean.TRUE.equals(((IRenderStateExtension) state).getRenderData(ZombiePlayerRenderReplacement.SHAPE_SWIM_TILT))) {
+        if (!(state instanceof HumanoidRenderState humanoid)) {
             return;
         }
         // death / riptide poses are mutually exclusive with the swim lean and are already applied by the base.

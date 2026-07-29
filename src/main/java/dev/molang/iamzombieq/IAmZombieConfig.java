@@ -34,8 +34,7 @@ public final class IAmZombieConfig {
     public static final Supplier<Integer> RAW_RABBIT_SPEED_DURATION = () -> 160;
     public static final Supplier<Integer> PUFFERFISH_ABSORPTION_AMPLIFIER = () -> 2;
     public static final Supplier<Integer> PUFFERFISH_ABSORPTION_DURATION = () -> 200;
-    public static final Supplier<Integer> PUFFERFISH_REGENERATION_AMPLIFIER = () -> 1;
-    public static final Supplier<Integer> PUFFERFISH_REGENERATION_DURATION = () -> 200;
+        public static final Supplier<Integer> PUFFERFISH_REGENERATION_DURATION = () -> 200;
     public static final Supplier<Integer> SUPER_ROTTEN_FLESH_STRENGTH_DURATION = () -> 900;
     public static final Supplier<Integer> GOLDEN_APPLE_ABSORPTION_DURATION = () -> 1200;
     public static final Supplier<Integer> GOLDEN_APPLE_ABSORPTION_AMPLIFIER = () -> 1;
@@ -65,8 +64,7 @@ public final class IAmZombieConfig {
     public static final Supplier<Integer> ENCHANTED_GOLDEN_APPLE_HUNGER_DURATION_TICKS = () -> 400;
     public static final Supplier<Integer> PUFFERFISH_ABSORPTION_DURATION_TICKS = () -> 200;
     public static final Supplier<Integer> PUFFERFISH_REGENERATION_DURATION_TICKS = () -> 200;
-    public static final Supplier<Integer> PUFFERFISH_REGENERATION_AMPLIFIER = () -> 1;
-    public static final Supplier<Integer> CHORUS_SLOW_FALLING_DURATION_TICKS = () -> 200;
+        public static final Supplier<Integer> CHORUS_SLOW_FALLING_DURATION_TICKS = () -> 200;
     public static final Supplier<Integer> CHORUS_NAUSEA_DURATION_TICKS = () -> 200;
     public static final Supplier<Integer> HONEY_NAUSEA_DURATION_TICKS = () -> 200;
 

@@ -132,22 +132,7 @@ public class CoffinBlock extends HorizontalDirectionalBlock {
         };
     }
 
-    @Override
-    public boolean isBed(BlockState state, BlockGetter level, BlockPos pos, LivingEntity sleeper) {
-        return true;
-    }
 
-    @Override
-    public Optional<ServerPlayer.RespawnPosAngle> getRespawnPosition(BlockState state, EntityType<?> type, LevelReader levelReader, BlockPos pos, float orientation) {
-        Direction facing = state.getValue(FACING);
-        return findCoffinStandUpPosition(type, levelReader, pos, facing, orientation)
-                .map(standUpPos -> ServerPlayer.RespawnPosAngle.of(standUpPos, pos, 0.0F));
-    }
-
-    @Override
-    public void setBedOccupied(BlockState state, Level level, BlockPos pos, LivingEntity sleeper, boolean occupied) {
-        level.setBlock(pos, state.setValue(OCCUPIED, occupied), 3);
-    }
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
@@ -250,7 +235,7 @@ public class CoffinBlock extends HorizontalDirectionalBlock {
     // any future MobKind the targeting matrix adds can never silently leak back into sleep-blocking. (Other players are
     // fellow zombies and are never scanned — Player is not a Mob.)
     public static boolean hasHostileNearby(ServerLevel level, ServerPlayer player, BlockPos pos) {
-        ZombieForm form = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().form();
+        ZombieForm form = IAmZombieAttachments.getPlayerZombie(player).state().form();
         Vec3 center = Vec3.atBottomCenterOf(pos);
         AABB area = new AABB(center.x() - 8.0, center.y() - 5.0, center.z() - 8.0, center.x() + 8.0, center.y() + 5.0, center.z() + 8.0);
         // Predicate overload: only proactive attackers are collected — the list is empty in the common "nothing

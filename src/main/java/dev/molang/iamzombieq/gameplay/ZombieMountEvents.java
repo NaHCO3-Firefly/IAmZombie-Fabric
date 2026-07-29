@@ -64,136 +64,15 @@ public final class ZombieMountEvents {
     }
 
         public static void onEntityInteract(Object event) {
-        if (event.getHand() != InteractionHand.MAIN_HAND) {
-            return;
-        }
-
-        Player player = event.getEntity();
-        if (!isZombiePlayer(player)) {
-            return;
-        }
-
-        // Only VANILLA (living) horses are refused. ZombieHorse/SkeletonHorse extend AbstractHorse (siblings of
-        // Horse, not subclasses), so isNormalHorse's instanceof Horse is already false for them; this early block
-        // therefore never fires for undead horses and the ZombieHorse feed handler below stays reachable (B5).
-        if (isNormalHorse(event.getTarget()) && !ZombieMountRules.canMount(true, MountKind.NORMAL_HORSE, false)) {
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-            if (!player.level().isClientSide()) {
-                player.sendSystemMessage(Component.translatable("iamzombieq.message.mount.horse_refused"));
-            }
-            return;
-        }
-
-        if (event.getTarget() instanceof ZombieHorse zombieHorse) {
-            ItemStack stack = player.getItemInHand(event.getHand());
-            if (isZombieHorseFood(stack)) {
-                if (zombieHorse.getHealth() < zombieHorse.getMaxHealth()) {
-                    if (!player.level().isClientSide()) {
-                        zombieHorse.heal(stack.is(IAmZombieItems.SUPER_ROTTEN_FLESH.get()) ? 10.0F : 4.0F);
-                        stack.consume(1, player);
-                    }
-                } else if (!player.level().isClientSide()) {
-                    // B7: at full health the feed used to silently do nothing and not cancel. Acknowledge the
-                    // interaction (don't waste the food) so it isn't silently dropped.
-                    player.sendSystemMessage(Component.translatable("iamzombieq.message.mount.horse_full_health"));
-                }
-                event.setCanceled(true);
-                event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-            }
-        }
-
-        // Undead horses (zombie/skeleton) are a zombie player's natural mounts. Vanilla gates BOTH riding and the
-        // inventory screen on isTamed(), but wild/spawned undead horses are untamed and can't be tamed by normal
-        // means -- so a zombie player could neither ride one nor open its bags (canMount=true was necessary but
-        // not sufficient). Mark it tamed+owned for the zombie player, then let VANILLA do the actual mount /
-        // inventory open (do NOT cancel). Empty/non-food hand only; the rotten-flesh heal path above already
-        // handled + cancelled food. (ZombieHorse/SkeletonHorse are siblings of Horse under AbstractHorse in 26.2.)
-        if (!player.level().isClientSide()
-                && (event.getTarget() instanceof ZombieHorse || event.getTarget() instanceof SkeletonHorse)
-                && event.getTarget() instanceof AbstractHorse undeadHorse
-                && !undeadHorse.isTamed()) {
-            undeadHorse.setTamed(true);
-            undeadHorse.setOwner(player);
-        }
-
-        if (event.getTarget() instanceof Spider spider) {
-            handleSpiderInteract(event, player, spider);
-            return;
-        }
-
-        if (event.getTarget() instanceof Zombie zombie) {
-            handleBigZombieInteract(event, player, zombie);
-            return;
-        }
-
-        if (event.getTarget() instanceof Chicken chicken) {
-            handleChickenInteract(event, player, chicken);
-        }
     }
 
         public static void onEntityMount(Object event) {
-        if (!event.isMounting() || !(event.getEntityMounting() instanceof Player player) || !isZombiePlayer(player)) {
-            return;
-        }
-
-        Entity mounted = event.getEntityBeingMounted();
-        if (mounted == null) {
-            return;
-        }
-
-        MountKind mountKind = mountKindFor(mounted);
-        if (!ZombieMountRules.canMount(true, zombieSize(player), mountKind, spiderOwnedBy(mounted, player))) {
-            event.setCanceled(true);
-            return;
-        }
-        // Defensive backstop for "provoked big zombie is not a mount" on any mount path other than the interact
-        // handler (which already returns early before startRiding).
-        if (mountKind == MountKind.BIG_ZOMBIE && mounted instanceof Zombie bigZombie && isBigZombieProvokedBy(bigZombie, player)) {
-            event.setCanceled(true);
-        }
     }
 
         public static void onIncomingDamage(Object event) {
-        if (!(event.getEntity() instanceof Horse horse) || horse.level().isClientSide()) {
-            return;
-        }
-        if (!(event.getSource().getEntity() instanceof Player player) || !isZombiePlayer(player)) {
-            return;
-        }
-
-        float healthAfterDamage = Math.max(0.0F, horse.getHealth() - event.getAmount());
-        if (healthAfterDamage <= 0.0F) {
-            PENDING_HORSE_HEALTH_RATIOS.put(horse.getUUID(), preDamageHorseHealthRatio(horse));
-        }
     }
 
         public static void onLivingDeath(Object event) {
-        if (event.getEntity() instanceof Nautilus nautilus && nautilus.level() instanceof ServerLevel nautilusLevel) {
-            handleNautilusDeath(event, nautilusLevel, nautilus);
-            return;
-        }
-
-        if (!(event.getEntity() instanceof Horse horse) || !(horse.level() instanceof ServerLevel level)) {
-            return;
-        }
-        if (!(event.getSource().getEntity() instanceof Player player) || !isZombiePlayer(player)) {
-            return;
-        }
-        Float pendingHorseHealthRatio = PENDING_HORSE_HEALTH_RATIOS.remove(horse.getUUID());
-        if (!ZombieInfectionRules.shouldInfect(IAmZombieConfig.configuredInfectionChance(gameDifficulty(level.getDifficulty())), horse.getRandom().nextDouble())) {
-            return;
-        }
-        if (!Object.canLivingConvert(horse, EntityTypes.ZOMBIE_HORSE, timer -> {})) {
-            return;
-        }
-
-        if (convertHorseToZombieHorse(level, horse, player, pendingHorseHealthRatio)) {
-            if (player instanceof ServerPlayer serverPlayer) {
-                IAmZombieAdvancements.award(serverPlayer, IAmZombieAdvancements.HORSE_INFECTION);
-            }
-            event.setCanceled(true);
-        }
     }
 
         public static void onServerStopped(Object event) {
@@ -201,20 +80,9 @@ public final class ZombieMountEvents {
     }
 
         public static void onLivingChangeTarget(Object event) {
-        if (!(event.getEntity() instanceof Spider spider) || !(event.getNewAboutToBeSetTarget() instanceof Player player)) {
-            if (event.getEntity() instanceof Zombie zombie
-                    && event.getNewAboutToBeSetTarget() instanceof Player target
-                    && isMountedBigZombieRider(zombie, target)) {
-                event.setNewAboutToBeSetTarget(null);
-            }
-            return;
-        }
-        if (spider.getData(IAmZombieAttachments.SPIDER_MOUNT).isOwnedBy(player.getUUID())) {
-            event.setNewAboutToBeSetTarget(null);
-        }
     }
 
-        public static void onEntityTick(EntityTickEvent.Post event) {
+        public static void onEntityTick(Object event) {
         if (event.getEntity().level().isClientSide()) {
             return;
         }
@@ -249,7 +117,7 @@ public final class ZombieMountEvents {
     }
 
     private static boolean isZombieHorseFood(ItemStack stack) {
-        return stack.is(Items.ROTTEN_FLESH) || stack.is(IAmZombieItems.SUPER_ROTTEN_FLESH.get());
+        return stack.is(Items.ROTTEN_FLESH) || stack.is(IAmZombieItems.SUPER_ROTTEN_FLESH);
     }
 
     // A vanilla (living) horse: the blocked mount kind. ZombieHorse/SkeletonHorse extend AbstractHorse (siblings of
@@ -260,83 +128,12 @@ public final class ZombieMountEvents {
     }
 
     private static void handleBigZombieInteract(Object event, Player player, Zombie zombie) {
-        ItemStack stack = player.getItemInHand(event.getHand());
-        if (!stack.isEmpty() || !isRideableBigZombie(zombie)) {
-            return;
-        }
-
-        // "If I hit it, I can't ride it": a big zombie the player has provoked (it is hunting the player, or the
-        // player recently struck it) is hostile, not a mount. Don't mount it and don't swallow the click.
-        if (isBigZombieProvokedBy(zombie, player)) {
-            return;
-        }
-
-        if (!ZombieMountRules.canMount(true, zombieSize(player), MountKind.BIG_ZOMBIE, false)) {
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-            return;
-        }
-
-        if (!player.level().isClientSide()) {
-            zombie.setTarget(null);
-            // Forced ride (rule already approved) so sneaking does not veto Entity.canRide; see handleSpiderInteract.
-            player.startRiding(zombie, true, true);
-            // B4: keep the mount from despawning while it serves as the player's ride (spider/horses already
-            // do this). The MobMixin#removeWhenFarAway override is the defensive backstop.
-            zombie.setPersistenceRequired();
-        }
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
     }
 
     private static void handleChickenInteract(Object event, Player player, Chicken chicken) {
-        ItemStack stack = player.getItemInHand(event.getHand());
-        if (!stack.isEmpty()) {
-            return;
-        }
-
-        if (!ZombieMountRules.canMount(true, zombieSize(player), MountKind.CHICKEN, false)) {
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-            return;
-        }
-
-        if (!player.level().isClientSide()) {
-            // Forced ride (rule already approved) so sneaking does not veto Entity.canRide; see handleSpiderInteract.
-            player.startRiding(chicken, true, true);
-            // B4: keep the mount from despawning while it serves as the player's ride (spider/horses already
-            // do this). The MobMixin#removeWhenFarAway override is the defensive backstop.
-            chicken.setPersistenceRequired();
-        }
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
     }
 
     private static void handleSpiderInteract(Object event, Player player, Spider spider) {
-        ItemStack stack = player.getItemInHand(event.getHand());
-        SpiderMountData data = spider.getData(IAmZombieAttachments.SPIDER_MOUNT);
-        if (isSpiderFood(stack)) {
-            if (!player.level().isClientSide()) {
-                handleSpiderFood(player, spider, stack, data);
-            }
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-            return;
-        }
-
-        if (stack.isEmpty() && ZombieMountRules.canMount(true, MountKind.SPIDER, data.isOwnedBy(player.getUUID()))) {
-            if (!player.level().isClientSide()) {
-                spider.setTarget(null);
-                // Force the ride: our canMount rule already approved it. The plain startRiding overload
-                // routes through Entity.canRide, which refuses to mount while the rider is sneaking
-                // (isShiftKeyDown) -- and players commonly sneak when carefully approaching a hostile
-                // spider, which previously made a tamed spider impossible to ride. The forced overload
-                // still fires Object (-> onEntityMount), so the canMount rule remains the gate.
-                player.startRiding(spider, true, true);
-            }
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-        }
     }
 
     private static void handleSpiderFood(Player player, Spider spider, ItemStack stack, SpiderMountData data) {
@@ -385,7 +182,7 @@ public final class ZombieMountEvents {
         if (stack.is(Items.SPIDER_EYE)) {
             return "minecraft:spider_eye";
         }
-        if (stack.is(IAmZombieItems.SUPER_ROTTEN_FLESH.get())) {
+        if (stack.is(IAmZombieItems.SUPER_ROTTEN_FLESH)) {
             return "iamzombieq:super_rotten_flesh";
         }
         return "";
@@ -432,19 +229,6 @@ public final class ZombieMountEvents {
     }
 
     private static void handleNautilusDeath(Object event, ServerLevel level, Nautilus nautilus) {
-        if (!(event.getSource().getEntity() instanceof Player player) || !isZombiePlayer(player)) {
-            return;
-        }
-        if (!ZombieInfectionRules.shouldInfect(IAmZombieConfig.configuredInfectionChance(gameDifficulty(level.getDifficulty())), nautilus.getRandom().nextDouble())) {
-            return;
-        }
-        if (!Object.canLivingConvert(nautilus, EntityTypes.ZOMBIE_NAUTILUS, timer -> {})) {
-            return;
-        }
-
-        if (convertNautilusToZombieNautilus(level, nautilus, player)) {
-            event.setCanceled(true);
-        }
     }
 
     private static boolean convertNautilusToZombieNautilus(ServerLevel level, Nautilus nautilus, Player owner) {

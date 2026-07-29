@@ -29,52 +29,9 @@ public final class ZombieInfectionEvents {
     }
 
         public static void onLivingDeath(Object event) {
-        LivingEntity victim = event.getEntity();
-        if (!(victim.level() instanceof ServerLevel level)) {
-            return;
-        }
-
-        DamageSource source = event.getSource();
-        if (!(source.getEntity() instanceof Player player) || !isZombiePlayer(player)) {
-            return;
-        }
-
-        if (victim instanceof Villager villager) {
-            tryInfectVillager(event, level, villager, player);
-        } else if (victim instanceof Mob mob
-                // Only a ZOMBIFIED-PIGLIN-form zombie player turns pigs/piglins into zombified piglins; a normal
-                // (or drowned/husk) zombie player cannot. The form is the "kin" of what it spreads.
-                && player.getData(dev.molang.iamzombieq.state.IAmZombieAttachments.PLAYER_ZOMBIE).state().form() == dev.molang.iamzombieq.rules.core.ZombieForm.ZOMBIFIED_PIGLIN
-                && ZombieInfectionRules.canInfectIntoZombifiedPiglin(victim instanceof Pig, victim instanceof AbstractPiglin)) {
-            tryInfectIntoZombifiedPiglin(event, level, mob, player);
-        }
     }
 
     private static void tryInfectVillager(Object event, ServerLevel level, Villager villager, Player player) {
-        if (!ZombieInfectionRules.shouldInfect(IAmZombieConfig.configuredInfectionChance(gameDifficulty(level.getDifficulty())), villager.getRandom().nextDouble())) {
-            return;
-        }
-
-        if (!Object.canLivingConvert(villager, EntityTypes.ZOMBIE_VILLAGER, timer -> {})) {
-            return;
-        }
-
-        // Phase-1 API: cancellable PRE fire AFTER the RNG + canLivingConvert gates but BEFORE the conversion;
-        // cancelling it aborts this infection. Server-side only; isolated via ZombieEventPublisher.
-        if (player instanceof ServerPlayer serverPlayer
-                && ZombieEventPublisher.postCancelable(
-                        new ZombieInfectPreEvent(serverPlayer, villager, EntityTypes.ZOMBIE_VILLAGER))) {
-            return;
-        }
-
-        if (convertVillagerToZombieVillager(level, villager, player)) {
-            awardInfection(player);
-            // Phase-1 API: observer POST fire AFTER the successful conversion. Server-side only; isolated.
-            if (player instanceof ServerPlayer serverPlayer) {
-                ZombieEventPublisher.post(new ZombieInfectedEvent(serverPlayer, villager, EntityTypes.ZOMBIE_VILLAGER));
-            }
-            event.setCanceled(true);
-        }
     }
 
     // N1: a zombie player that kills a Pig OR any Piglin/AbstractPiglin can infect it into a zombified piglin, mirroring
@@ -83,30 +40,6 @@ public final class ZombieInfectionEvents {
     // call site): ONLY a ZOMBIFIED_PIGLIN-form zombie player infects pigs/piglins into zombified piglins (the form is
     // the "kin" of what it spreads); NORMAL/DROWNED/HUSK/GIANT cannot.
     private static void tryInfectIntoZombifiedPiglin(Object event, ServerLevel level, Mob victim, Player player) {
-        if (!ZombieInfectionRules.shouldInfect(IAmZombieConfig.configuredInfectionChance(gameDifficulty(level.getDifficulty())), victim.getRandom().nextDouble())) {
-            return;
-        }
-
-        if (!Object.canLivingConvert(victim, EntityTypes.ZOMBIFIED_PIGLIN, timer -> {})) {
-            return;
-        }
-
-        // Phase-1 API: cancellable PRE fire AFTER the RNG + canLivingConvert gates but BEFORE the conversion;
-        // cancelling it aborts this infection. Server-side only; isolated via ZombieEventPublisher.
-        if (player instanceof ServerPlayer serverPlayer
-                && ZombieEventPublisher.postCancelable(
-                        new ZombieInfectPreEvent(serverPlayer, victim, EntityTypes.ZOMBIFIED_PIGLIN))) {
-            return;
-        }
-
-        if (convertToZombifiedPiglin(level, victim, player)) {
-            awardInfection(player);
-            // Phase-1 API: observer POST fire AFTER the successful conversion. Server-side only; isolated.
-            if (player instanceof ServerPlayer serverPlayer) {
-                ZombieEventPublisher.post(new ZombieInfectedEvent(serverPlayer, victim, EntityTypes.ZOMBIFIED_PIGLIN));
-            }
-            event.setCanceled(true);
-        }
     }
 
     private static void awardInfection(Player player) {
@@ -141,7 +74,7 @@ public final class ZombieInfectionEvents {
                     zombie.setGossips(villager.getGossips().copy());
                     zombie.setTradeOffers(villager.getOffers().copy());
                     zombie.setVillagerXp(villager.getVillagerXp());
-                    Object.onLivingConvert(villager, zombie);
+                    // Object.onLivingConvert(villager, zombie);
                     if (!villager.isSilent()) {
                         level.levelEvent(null, 1026, villager.blockPosition(), 0);
                     }
@@ -179,7 +112,7 @@ public final class ZombieInfectionEvents {
                             null
                     );
                     piglin.setPersistenceRequired();
-                    Object.onLivingConvert(victim, piglin);
+                    // Object.onLivingConvert(victim, piglin);
                     if (!victim.isSilent()) {
                         level.levelEvent(null, 1026, victim.blockPosition(), 0);
                     }

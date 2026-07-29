@@ -85,7 +85,7 @@ public final class ZombiePlayerVisuals {
         state.showRightPants = false;
     }
 
-    public static void renderMonsterBody(Object<?> event) {
+    public static void renderMonsterBody(Object event) {
         if (!ZombieRenderRules.usesMonsterTexture(IAmZombieClientConfig.PLAYER_SKIN_MODE.get())) {
             return;
         }

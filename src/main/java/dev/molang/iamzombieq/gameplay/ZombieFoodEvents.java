@@ -51,40 +51,6 @@ public final class ZombieFoodEvents {
     // item / FoodProperties is mutated; the mod's super rotten flesh is already always-edible via its registration,
     // but is handled here too so the behavior is uniform for all four ids.
         public static void onRightClickItem(Object event) {
-        if (event.getLevel().isClientSide()) {
-            return;
-        }
-        Player player = event.getEntity();
-        if (!shouldProcessZombieFood(player)) {
-            return;
-        }
-        ItemStack stack = event.getItemStack();
-        if (!ZombieFoodRules.isAlwaysEdibleForZombies(itemId(stack)) || !isFood(stack)) {
-            return;
-        }
-        FoodProperties food = stack.get(DataComponents.FOOD);
-        Consumable consumable = stack.get(DataComponents.CONSUMABLE);
-        if (food == null || consumable == null) {
-            return;
-        }
-        // Only step in when vanilla would actually refuse (full hunger and not always-edible/invulnerable); otherwise
-        // leave the normal eat path untouched so the Start/Finish buff handling runs exactly as before.
-        if (player.canEat(food.canAlwaysEat())) {
-            return;
-        }
-        if (player.isUsingItem() || player.getCooldowns().isOnCooldown(stack)) {
-            return;
-        }
-        if (consumable.consumeTicks() <= 0) {
-            // Defensive: the four target foods all consume over time today, but if one were ever instant, applying it
-            // directly here would bypass the Start/Finish buff substitution, so just let vanilla handle it.
-            return;
-        }
-        // Begin the multi-tick eat exactly like Consumable.startConsuming's over-time branch; the Start/Tick/Finish
-        // events then fire normally and the buff substitution + vanilla-side-effect removal run as usual.
-        player.startUsingItem(event.getHand());
-        event.setCancellationResult(InteractionResult.CONSUME);
-        event.setCanceled(true);
     }
 
     // Cake (and candle cake) is eaten as a BLOCK via CakeBlock#useWithoutItem, never as an ItemStack, so it never fires
@@ -93,147 +59,23 @@ public final class ZombieFoodEvents {
     // punishment + zombie effects the finished-eat handler applies for an ItemStack food. We do NOT cancel the event, so
     // vanilla still runs its own eat (eats the slice, plays sound, advances BITES); we only add the missing zombie rules.
         public static void onRightClickCakeBlock(Object event) {
-        if (event.getLevel().isClientSide()) {
-            return;
-        }
-        Player player = event.getEntity();
-        if (!shouldProcessZombieFood(player)) {
-            return;
-        }
-        BlockState clickedState = event.getLevel().getBlockState(event.getPos());
-        if (!(clickedState.getBlock() instanceof CakeBlock) && !(clickedState.getBlock() instanceof CandleCakeBlock)) {
-            return;
-        }
-        // Vanilla CakeBlock.eat() refuses at a full hunger bar (canEat(false)); match it so we never punish a no-op click.
-        if (!player.canEat(false)) {
-            return;
-        }
-        // No slice left to eat means vanilla will not actually eat, so do not apply the debuff. A candle cake always has a
-        // whole cake underneath (no BITES property), so only the plain CakeBlock can ever be at its last/empty state.
-        if (clickedState.hasProperty(CakeBlock.BITES) && clickedState.getValue(CakeBlock.BITES) >= CakeBlock.MAX_BITES) {
-            return;
-        }
-        if (!appliesFullZombieFoodRules(player)) {
-            return;
-        }
-
-        FoodRule rule = ZombieFoodRules.ruleForStack(ItemStack.EMPTY, "minecraft:cake", configuredZombieFoods());
-        ZombieFoodRules.HumanFoodPunishmentSettings punishmentSettings = ZombieFoodRules.humanFoodPunishmentSettings(
-                IAmZombieConfig.HUMAN_FOOD_NAUSEA_DURATION_TICKS.get(),
-                IAmZombieConfig.HUMAN_FOOD_HUNGER_DURATION_TICKS.get(),
-                IAmZombieConfig.HUMAN_FOOD_HUNGER_AMPLIFIER.get()
-        );
-        if (rule.appliesHumanFoodPunishment()) {
-            applyHumanFoodPunishment(player, punishmentSettings);
-            if (player instanceof ServerPlayer serverPlayer) {
-                IAmZombieAdvancements.award(serverPlayer, IAmZombieAdvancements.HUMAN_FOOD);
-            }
-        }
-        applyZombieEffects(player, rule, "minecraft:cake");
-        // Intentionally NOT cancelled: vanilla CakeBlock#useWithoutItem still eats the slice as usual.
     }
 
         public static void onItemUseStarted(Object event) {
-        if (!(event.getEntity() instanceof Player player) || !shouldProcessZombieFood(player)) {
-            return;
-        }
-
-        ItemStack eaten = event.getItem();
-        String eatenId = itemId(eaten);
-        if (!ZombieFoodRules.isFoodRuleTarget(eatenId) || !isFood(eaten)) {
-            return;
-        }
-        // In creative the survival bookkeeping (human-food punishment / arbitrary food handling) makes no sense, so
-        // only the special always-edible zombie foods get their buff substitution + vanilla-side-effect removal there.
-        if (!appliesFullZombieFoodRules(player) && !ZombieFoodRules.isAlwaysEdibleForZombies(eatenId)) {
-            return;
-        }
-
-        PENDING_FOOD_PUNISHMENTS.put(player.getUUID(), preserveExistingFoodPunishments(player));
-        if (resolveFoodRule(player, eaten, eatenId).suppressesVanillaPositiveEffects()) {
-            PENDING_GOLDEN_APPLE_EFFECTS.put(player.getUUID(), preserveExistingGoldenAppleEffects(player));
-        }
     }
 
         public static void onItemUseFinished(Object event) {
-        if (!(event.getEntity() instanceof Player player)) {
-            return;
-        }
-        if (!shouldProcessZombieFood(player)) {
-            // e.g. switched to spectator mid-eat: drop any Start snapshot instead of leaking it.
-            clearPendingFoodSnapshots(player);
-            return;
-        }
-
-        ItemStack eaten = event.getItem();
-        String eatenItemId = itemId(eaten);
-        // Mirror the Start-side creative filter: outside the full-rules modes only the special always-edible foods are
-        // handled (and snapshotted), so drop any stale snapshot and bail for everything else to avoid leaking it.
-        if (!appliesFullZombieFoodRules(player) && !ZombieFoodRules.isAlwaysEdibleForZombies(eatenItemId)) {
-            clearPendingFoodSnapshots(player);
-            return;
-        }
-        ZombieFoodRules.PreservedFoodPunishments preserved = PENDING_FOOD_PUNISHMENTS.remove(player.getUUID());
-        ZombieFoodRules.PreservedGoldenAppleEffects preservedGoldenAppleEffects = PENDING_GOLDEN_APPLE_EFFECTS.remove(player.getUUID());
-        if (!ZombieFoodRules.isFoodRuleTarget(eatenItemId) || !isFood(eaten)) {
-            return;
-        }
-
-        FoodRule rule = resolveFoodRule(player, eaten, eatenItemId);
-        // ADDITIVE (Phase-1 API): cancellable PRE fire on the item-eat path BEFORE any zombie-food effect applies,
-        // carrying the real eaten stack (copied by the event) + resolved rule. If a listener cancels it, skip the
-        // whole zombie-food handling for this eat. Server-side only; isolated via ZombieEventPublisher.
-        if (player instanceof ServerPlayer prePlayer
-                && ZombieEventPublisher.postCancelable(new ZombieEatPreEvent(prePlayer, eaten, rule))) {
-            return;
-        }
-        ZombieFoodRules.HumanFoodPunishmentSettings punishmentSettings = ZombieFoodRules.humanFoodPunishmentSettings(
-                IAmZombieConfig.HUMAN_FOOD_NAUSEA_DURATION_TICKS.get(),
-                IAmZombieConfig.HUMAN_FOOD_HUNGER_DURATION_TICKS.get(),
-                IAmZombieConfig.HUMAN_FOOD_HUNGER_AMPLIFIER.get()
-        );
-        if (player instanceof ServerPlayer serverPlayer) {
-            if (eaten.is(Items.ROTTEN_FLESH)) {
-                IAmZombieAdvancements.award(serverPlayer, IAmZombieAdvancements.ROTTEN_FLESH);
-            }
-            if (rule.appliesHumanFoodPunishment()) {
-                IAmZombieAdvancements.award(serverPlayer, IAmZombieAdvancements.HUMAN_FOOD);
-            }
-        }
-        int elapsedTicks = eaten.getUseDuration(player) - player.getUseItemRemainingTicks();
-        if (rule.appliesHumanFoodPunishment()) {
-            applyHumanFoodPunishment(player, punishmentSettings);
-        } else {
-            removeVanillaFoodPunishment(player, preserved, elapsedTicks);
-        }
-        if (rule.suppressesVanillaPositiveEffects()) {
-            removeGoldenAppleEffects(player, preservedGoldenAppleEffects, elapsedTicks);
-        }
-        applyZombieEffects(player, rule, eatenItemId);
-        // ADDITIVE (Phase-1 API): observer POST fire AFTER a successful zombie-food eat on the item path, carrying
-        // the REAL eaten stack (copied by the event) + applied rule — for EVERY successful zombie-food eat, not
-        // just baby->adult. Server-side only; isolated via ZombieEventPublisher.
-        if (player instanceof ServerPlayer atePlayer) {
-            ZombieEventPublisher.post(new ZombieAteEvent(atePlayer, eaten, rule));
-        }
     }
 
         public static void onItemUseStopped(Object event) {
-        if (event.getEntity() instanceof Player player) {
-            clearPendingFoodSnapshots(player);
-        }
     }
 
     // Vanilla die() calls stopUsingItem() (no Stop event) and a disconnect mid-eat does not fire Stop either,
     // so clear any pending snapshot on death/logout to avoid a per-UUID leak that never gets consumed.
         public static void onPlayerDeath(Object event) {
-        if (event.getEntity() instanceof Player player) {
-            clearPendingFoodSnapshots(player);
-        }
     }
 
         public static void onPlayerLoggedOut(Object event) {
-        clearPendingFoodSnapshots(event.getEntity());
     }
 
         public static void onServerStopped(Object event) {
