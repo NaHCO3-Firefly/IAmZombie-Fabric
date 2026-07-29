@@ -3,6 +3,7 @@ package dev.molang.iamzombieq;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -72,6 +73,13 @@ public final class IAmZombieMod implements ModInitializer {
         // Item use (eating) — zombie food rules
         UseItemCallback.EVENT.register((player, world, hand) ->
                 dev.molang.iamzombieq.gameplay.ZombieFoodEvents.onRightClickItem(player, world, hand));
+
+        // Death events — zombie evolution
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (entity instanceof net.minecraft.server.level.ServerPlayer player) {
+                dev.molang.iamzombieq.gameplay.ZombiePlayerEvents.onLivingDeath(player, source);
+            }
+        });
 
         LOGGER.info("{} initialized", ENGLISH_NAME);
     }

@@ -192,14 +192,12 @@ public final class ZombiePlayerEvents {
 
         public static void onLivingDeath(ServerPlayer player, DamageSource source) {
         if (!shouldApplyZombieRules(player)) return;
-        var level = (ServerLevel) player.level();
         var data = dataOf(player);
-        // TODO: Add DeathTrigger.fromSource(source) and call ZombieEvolutionRules.evolve
-        // var trigger = DeathTrigger.fromSource(source);
-        // var result = ZombieEvolutionRules.evolve(level, data.state(), trigger, data);
-        // if (result != null && result.outcome() != null) {
-        //     ZombieEventPublisher.post(new ZombieEvolvedEvent(player, data.state(), result.nextState(), result.outcome()));
-        // }
+        var trigger = DeathTrigger.fromSource(source);
+        var result = ZombieEvolutionRules.resolveDeath(data.state(), trigger, dev.molang.iamzombieq.rules.BiomeContext.OTHER);
+        if (result != null && result.outcome() != null && result.outcome() != dev.molang.iamzombieq.rules.DeathOutcome.ORDINARY_DEATH_RESET) {
+            ZombieEventPublisher.post(new ZombieEvolvedEvent(player, data.state(), result.nextState(), result.outcome()));
+        }
     }
 
     private static PlayerZombieData dataOf(ServerPlayer player) {
