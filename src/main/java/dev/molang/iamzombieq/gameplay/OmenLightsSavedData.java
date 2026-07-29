@@ -45,9 +45,9 @@ public final class OmenLightsSavedData extends SavedData {
             ).apply(i, OmenLightsSavedData::fromEntries)
     );
 
-    // No DataFixTypes: NeoForge's patched SavedDataType supports a null data-fixer (no DFU update
-    // logic for mod data), and on version-pinned 26.2 this data is always written at the current
-    // version, so no datafixer is ever expected to run. The 3-arg constructor passes null for us.
+    // No DataFixTypes: the vanilla SavedDataType supports a null data-fixer (no DFU update logic
+    // for mod data), and on version-pinned 26.2 this data is always written at the current version,
+    // so no datafixer is ever expected to run.
     public static final SavedDataType<OmenLightsSavedData> TYPE = new SavedDataType<>(
             ModIds.id("herobrine_omen_lights"),
             OmenLightsSavedData::new,

@@ -52,8 +52,8 @@ public final class IAmZombieItems {
             props -> new StandingAndWallBlockItem(
                     IAmZombieBlocks.HEROBRINE_HEAD,
                     IAmZombieBlocks.HEROBRINE_WALL_HEAD,
-                    props,
-                    Direction.DOWN
+                    Direction.DOWN,
+                    props
             ),
             new Item.Properties().stacksTo(64)
     );

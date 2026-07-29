@@ -74,153 +74,42 @@ public final class HerobrineEvents {
     }
 
         public static void onPlayerTick(Object event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || player.isSpectator() || !player.isAlive()) {
-            return;
-        }
-
-        ServerLevel level = player.level();
-        if (liveHerobrineCount > 0) {
-            handleGaze(player, level);
-        }
-        maybeSpawnNear(player, level);
-        restoreExpiredOmenLights(level);
+        // TODO: Fabric port
     }
 
         public static void onAttackEntity(Object event) {
-        if (!(event.getTarget() instanceof HerobrineEntity herobrine) || !(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-
-        event.setCanceled(true);
-        handleEncounter(player, herobrine);
+        // TODO: Fabric port
     }
 
         public static void onProjectileImpact(Object event) {
-        // Any projectile striking Herobrine — arrow, trident, snowball, egg, AND thrown splash /
-        // lingering potions (ThrownPotion is a Projectile) — counts as an interaction if its owner
-        // is a server player. Resolve the entity hit, confirm it's Herobrine, resolve the owner,
-        // then run the encounter and cancel so the projectile's normal impact never processes.
-        HitResult ray = event.getRayTraceResult();
-        if (ray.getType() != HitResult.Type.ENTITY || !(ray instanceof EntityHitResult entityHit)) {
-            return;
-        }
-        if (!(entityHit.getEntity() instanceof HerobrineEntity herobrine)) {
-            return;
-        }
-        Projectile projectile = event.getProjectile();
-        if (projectile.level().isClientSide()) {
-            return;
-        }
-        if (!(projectile.getOwner() instanceof ServerPlayer player)) {
-            return;
-        }
-        event.setCanceled(true);
-        handleEncounter(player, herobrine);
+        // TODO: Fabric port
     }
 
         public static void onEntityInteract(Object event) {
-        if (event.getTarget() instanceof HerobrineEntity) {
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-        }
+        // TODO: Fabric port
     }
 
         public static void onEntityInteractSpecific(Object event) {
-        if (event.getTarget() instanceof HerobrineEntity) {
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
-        }
+        // TODO: Fabric port
     }
 
         public static void onPlayerClone(Object event) {
-        // On a real death the server builds a brand-new ServerPlayer; this is where we move the
-        // snapshotted inventory + XP onto the NEW player so the encounter death "keeps inventory"
-        // (the old player's inventory was already cleared before the kill, so vanilla drops
-        // nothing). Restore here rather than on respawn so the data is present the instant the new
-        // player exists.
-        if (!event.isWasDeath() || !(event.getEntity() instanceof ServerPlayer newPlayer)) {
-            return;
-        }
-        // Carry the per-player dread state across the player's OWN death so "veteran forever"
-        // (escalatedBefore) and accumulated sightings/timings survive the respawn. The attachment is
-        // not .copyOnDeath(), so read it off the original (dead) player and re-set it on the new one,
-        // matching the PLAYER_ZOMBIE/HEROBRINE_PENDING_RESPAWN manual-carry pattern.
-        HerobrineEncounterState carried = event.getOriginal().getData(IAmZombieAttachments.HEROBRINE_ENCOUNTER);
-        newPlayer.setData(IAmZombieAttachments.HEROBRINE_ENCOUNTER, new HerobrineEncounterState(
-                carried.sightings, carried.lastSightingTick, carried.lastLethalTick, carried.escalatedBefore));
-        PendingRespawn pending = PENDING_RESPAWNS.get(newPlayer.getUUID());
-        if (pending == null) {
-            // Fallback: the in-memory map was cleared by a server stop while the player was at the
-            // death screen. The durable attachment rode along on the ORIGINAL (dead) player's NBT, so
-            // recover it from there. EMPTY means there is genuinely no pending snapshot → no-op.
-            HerobrineRespawnSnapshot snapshot =
-                    event.getOriginal().getData(IAmZombieAttachments.HEROBRINE_PENDING_RESPAWN);
-            if (!snapshot.isPresent()) {
-                return;
-            }
-            pending = fromSnapshot(snapshot);
-            // Carry the snapshot onto the NEW player so onPlayerRespawn can read the death position
-            // after the original player is gone (the in-memory entry is still absent on this path).
-            newPlayer.setData(IAmZombieAttachments.HEROBRINE_PENDING_RESPAWN, snapshot);
-        }
-        restoreInventory(newPlayer, pending);
-        restoreExperience(newPlayer, pending);
+        // TODO: Fabric port
     }
 
         public static void onPlayerRespawn(Object event) {
-        // After the death screen, teleport the (new) player back to exactly where they died,
-        // facing the same way, so the encounter death reads as "respawn in place" without ever
-        // touching the player's bed/world spawn. Consume the pending entry only here, once the
-        // whole death → clone → respawn lifecycle is complete.
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-        PendingRespawn pending = PENDING_RESPAWNS.remove(player.getUUID());
-        if (pending == null) {
-            // Fallback: the in-memory entry was lost to a server stop; the durable snapshot was copied
-            // onto the new player in onPlayerClone, so read the death position from there instead.
-            HerobrineRespawnSnapshot snapshot = player.getData(IAmZombieAttachments.HEROBRINE_PENDING_RESPAWN);
-            if (!snapshot.isPresent()) {
-                return;
-            }
-            pending = fromSnapshot(snapshot);
-        }
-        player.teleportTo(player.level(), pending.position().x, pending.position().y, pending.position().z,
-                Set.of(), pending.yRot(), pending.xRot(), true);
-        player.clearFire();
-        player.setAirSupply(player.getMaxAirSupply());
-        player.resetFallDistance();
-        // Clear the durable mirror so no stale snapshot persists once the whole death → clone →
-        // respawn lifecycle has completed (covers both the normal and the post-server-stop path).
-        player.setData(IAmZombieAttachments.HEROBRINE_PENDING_RESPAWN, HerobrineRespawnSnapshot.EMPTY);
+        // TODO: Fabric port
     }
 
         public static void onEntityJoinLevel(Object event) {
-        // Increment for ANY HerobrineEntity entering a server level — natural cave spawn, /summon,
-        // or chunk-load — so a live Herobrine ALWAYS arms the per-tick gaze scan (the root cause of
-        // "looking does nothing, only attack works" was that the count was bumped only at the
-        // natural-spawn site). Object decrements symmetrically.
-        if (event.getLevel().isClientSide()) {
-            return;
-        }
-        if (event.getEntity() instanceof HerobrineEntity) {
-            liveHerobrineCount++;
-        }
+        // TODO: Fabric port
     }
 
         public static void onEntityLeaveLevel(Object event) {
-        // Robustly covers discard (gaze/attack/projectile death), entity death, and chunk-unload.
-        // Filter to the server level so the count stays a pure server-side gate matching the join
-        // increment.
-        if (event.getLevel().isClientSide()) {
-            return;
-        }
-        if (event.getEntity() instanceof HerobrineEntity && liveHerobrineCount > 0) {
-            liveHerobrineCount--;
-        }
+        // TODO: Fabric port
     }
 
-        public static void onServerStopped(Object event) {
+        public static void onServerStopped() {
         liveHerobrineCount = 0;
         // Dread (HEROBRINE_ENCOUNTER attachment) and omen restorations (OmenLightsSavedData) are now
         // durable, so they are NOT cleared here — they persist across restart by design. Only the

@@ -28,11 +28,12 @@ public record ZombiePlayerRenderReplacement(
     );
 
     public static void set(AvatarRenderState state, ZombiePlayerRenderReplacement replacement) {
-        ((IRenderStateExtension) state).setRenderData(KEY, replacement);
+        // TODO: Fabric port — store replacement via ContextKey on AvatarRenderState
     }
 
     public static ZombiePlayerRenderReplacement get(AvatarRenderState state) {
-        return ((IRenderStateExtension) state).getRenderData(KEY);
+        // TODO: Fabric port — retrieve from AvatarRenderState via ContextKey
+        return null;
     }
 
     public static void copyAvatarAnimation(AvatarRenderState avatar, EntityRenderState shape) {
@@ -71,7 +72,7 @@ public record ZombiePlayerRenderReplacement(
             // Tag this shape state so the LivingEntityRenderer swim mixin applies the player-style swim/crawl
             // tilt (vanilla mob renderers never tilt for swimAmount/isVisuallySwimming). Only humanoid states
             // carry those swim fields, so the marker only belongs on them.
-            ((IRenderStateExtension) humanoidShape).setRenderData(SHAPE_SWIM_TILT, Boolean.TRUE);
+            // TODO: Fabric port — set SHAPE_SWIM_TILT marker via ContextKey on humanoidShape
         }
     }
 }

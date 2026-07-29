@@ -43,9 +43,8 @@ import net.minecraft.world.phys.AABB;
  * always preserved. The disguise mask (iron golem stands down) + the trade gate + the N9/N10 drowned-trident
  * social rules are unchanged.
  *
- * <p>Uses NeoForge's {@link Object} (fired centrally from setTarget, including the brain-based
- * BEHAVIOR_TARGET path used by piglins/brutes/hoglins), so a single server-side hook covers both goal- and
- * brain-based targeting.
+ * <p>Uses Fabric mixin to {@link Mob#setTarget}, including the brain-based BEHAVIOR_TARGET path used by
+ * piglins/brutes/hoglins, so a single server-side hook covers both goal- and brain-based targeting.
  *
  * <p>Also hosts the disguise-mask trade behaviour (G19 + G12 durability): a zombie player may only open
  * villager / wandering-trader trades while wearing the disguise mask, and each successful trade spends one point
@@ -315,9 +314,9 @@ public final class ZombieMobTargetingEvents {
     }
 
     /**
-     * G12 durability: spend one point of mask durability per SUCCESSFUL trade while the mask is worn. NeoForge's
-     * {@link Object} fires server-side from {@code AbstractVillager.notifyTrade} once a trade
-     * result is taken, and carries the trading player, so it is the precise "successful trade" hook.
+     * G12 durability: spend one point of mask durability per SUCCESSFUL trade while the mask is worn.
+     * Called server-side from a mixin to {@code AbstractVillager.notifyTrade} once a trade result is taken,
+     * and carries the trading player, so it is the precise "successful trade" hook.
      */
     /**
      * Spend one point of disguise mask durability after a successful trade.

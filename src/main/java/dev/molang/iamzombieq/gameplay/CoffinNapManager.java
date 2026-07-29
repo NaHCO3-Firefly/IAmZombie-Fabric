@@ -62,13 +62,7 @@ public final class CoffinNapManager {
 
     /** Called from {@code ServerTickEvents.START_SERVER_TICK} in IAmZombieMod. */
     public static void onServerTick() {
-        for (var entry : new ArrayList<>(NAPS.entrySet())) {
-            UUID id = entry.getKey();
-            Nap nap = entry.getValue();
-            // We need a server-level reference. NAPS entries include the player's last known level;
-            // resolve via the player list when possible.
-            // For now, tick handling is done per-player via the main mod class.
-        }
+        // TODO: Fabric port — iterate NAPS entries and tick sleeping players
     }
 
     /** Called per-player from a server tick or event handler. */
@@ -154,7 +148,7 @@ public final class CoffinNapManager {
         }
     }
 
-    /** Advance this dimension's clock to NIGHT. Uses vanilla clock API directly (no NeoForge hook). */
+    /** Advance this dimension's clock to NIGHT. Uses vanilla clock API directly. */
     private static boolean advanceToNight(ServerLevel level) {
         var defaultClock = level.dimensionType().effectiveClock();
         if (defaultClock.isEmpty() || !level.getGameRules().getBoolean(GameRules.ADVANCE_TIME)) {

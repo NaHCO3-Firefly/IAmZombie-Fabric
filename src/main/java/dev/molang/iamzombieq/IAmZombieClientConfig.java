@@ -1,6 +1,7 @@
 package dev.molang.iamzombieq;
 
 import java.util.function.Supplier;
+import dev.molang.iamzombieq.rules.ZombiePlayerSkinMode;
 
 /**
  * Client-side configuration using Cloth Config API.
@@ -8,8 +9,8 @@ import java.util.function.Supplier;
  */
 public final class IAmZombieClientConfig {
 
-    /** Player skin mode: 0 = zombie, 1 = human, 2 = auto-detect. */
-    public static final Supplier<Integer> PLAYER_SKIN_MODE = () -> 0;
+    /** Player skin mode. */
+    public static final Supplier<ZombiePlayerSkinMode> PLAYER_SKIN_MODE = () -> ZombiePlayerSkinMode.MONSTER_TEXTURE;
 
     private IAmZombieClientConfig() {
     }

@@ -83,32 +83,6 @@ public final class ZombieMountEvents {
     }
 
         public static void onEntityTick(Object event) {
-        if (event.getEntity().level().isClientSide()) {
-            return;
-        }
-
-        // Tamed-spider steering is handled by the vanilla riding flow (MobMixin.getControllingPassenger makes the
-        // spider report the owner as its controlling passenger so the client sends rider input; LivingEntityMixin
-        // .getRiddenInput/getRiddenSpeed drive it). The actual climb motion now comes from SpiderMixin, which
-        // makes a ridden owner-spider's onClimbable() track its local horizontalCollision on the controlling
-        // client. Here we keep the SERVER-side synced climbing flag in sync with collision so the climb
-        // ANIMATION shows for observers; B6 fix: track the flag in BOTH directions (true when colliding, false
-        // otherwise) instead of only ever poking it true.
-        if (event.getEntity() instanceof Spider spider
-                && spider.getFirstPassenger() instanceof Player rider
-                && spider.getData(IAmZombieAttachments.SPIDER_MOUNT).isOwnedBy(rider.getUUID())) {
-            spider.setClimbing(spider.horizontalCollision);
-            return;
-        }
-
-        // Chicken + big-zombie steering now goes through the vanilla controlling-passenger riding flow
-        // (MobMixin.getControllingPassenger reports the baby-player rider; LivingEntityMixin.getRiddenInput/
-        // getRiddenSpeed/tickRidden drive + rotate them), so no per-tick driveMount is needed here. We keep only
-        // the big-zombie auto-attack acquisition, which is not part of the movement flow.
-        if (event.getEntity() instanceof Zombie zombie && zombie.level() instanceof ServerLevel level && isRideableBigZombie(zombie)
-                && zombie.getFirstPassenger() instanceof Player player && isBabyZombiePlayer(player)) {
-            maybeAutoTargetForMountedBigZombie(level, zombie, player);
-        }
     }
 
     private static boolean isZombiePlayer(Player player) {

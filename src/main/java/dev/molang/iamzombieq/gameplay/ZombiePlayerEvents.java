@@ -137,131 +137,18 @@ public final class ZombiePlayerEvents {
     }
 
         public static void onPlayerTick(Object event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || player.isSpectator() || !player.isAlive()) {
-            return;
-        }
-
-        // A creative player who has never been a zombie (no attachment) has nothing to run; bail before
-        // materializing the default attachment. A creative ZOMBIE (has data) runs the full per-tick logic below
-        // just like a survival zombie (N6) — only flight + invulnerability remain creative-inherent.
-        if (player.isCreative() && !player.hasData(IAmZombieAttachments.PLAYER_ZOMBIE)) {
-            return;
-        }
-
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-
-        refreshFormAttributes(player, data);
-        applyPassiveFormAbilities(player, data);
-        if (data.state().form() == ZombieForm.GIANT) {
-            handleGiantTick(player);
-        }
-
-        if (!shouldApplyZombieRules(player)) {
-            return;
-        }
-
-        ItemStack headStack = player.getItemBySlot(EquipmentSlot.HEAD);
-        boolean sunBurnTick = isSunBurnTick(player);
-        if (!sunBurnTick) {
-            return;
-        }
-
-        HeadProtection headProtection = classifyHeadProtection(headStack);
-        if (ZombieSunlightRules.shouldBurn(data.state().form(), true, headProtection)) {
-            IAmZombieAdvancements.award(player, IAmZombieAdvancements.SUN);
-            igniteSunlightBurn(player);
-        } else if (ZombieSunlightRules.shouldDamageHeadProtection(data.state().form(), true, headProtection) && headStack.isDamageableItem()) {
-            int damage = IAmZombieConfig.SUN_PROTECTION_HEADGEAR_DAMAGE.get();
-            if (damage > 0) {
-                headStack.hurtAndBreak(damage, player, EquipmentSlot.HEAD);
-            }
-        }
     }
 
         public static void onBreakSpeed(Object event) {
-        if (!shouldApplyZombieRules(event.getEntity())) {
-            return;
-        }
-        PlayerZombieData data = event.getEntity().getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-        // Only counter the vanilla "not on ground" /5 mining penalty while floating. The SUBMERGED_MINING_SPEED
-        // attribute already neutralizes the underwater 0.2x penalty, so applying x5 on the ground too would stack to ~5x.
-        if (data.state().form() == ZombieForm.DROWNED && event.getEntity().isUnderWater() && !event.getEntity().onGround()) {
-            event.setNewSpeed(Math.max(event.getNewSpeed(), event.getOriginalSpeed() * 5.0F));
-            return;
-        }
-
-        // Vanilla-zombie flavor: bare-handed zombies claw through wooden doors faster. Independent of the
-        // drowned underwater branch above (which already returned), so the two never stack.
-        boolean mainHandEmpty = event.getEntity().getMainHandItem().isEmpty();
-        boolean blockIsWoodenDoor = event.getState().is(BlockTags.WOODEN_DOORS);
-        if (ZombieBalanceRules.shouldBoostWoodenDoorBreak(mainHandEmpty, blockIsWoodenDoor)) {
-            event.setNewSpeed(event.getNewSpeed() * ZombieBalanceRules.WOODEN_DOOR_BREAK_MULTIPLIER);
-        }
     }
 
         public static void onIncomingDamage(Object event) {
-        if (replaceSunlightFireDamage(event)) {
-            return;
-        }
-
-        // Suffocation immunity for the giant: its huge body is constantly embedded in the blocks it is mid-crushing,
-        // so without this it would smother on its own path. Bound strictly to the GIANT form (revoked the instant
-        // the form changes), so a reverted player can never sit invincibly inside solid blocks.
-        if (event.getEntity() instanceof ServerPlayer giant
-                && shouldApplyZombieRules(giant)
-                && event.getSource().is(DamageTypes.IN_WALL)
-                && giant.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().form() == ZombieForm.GIANT) {
-            event.setCanceled(true);
-            return;
-        }
-
-        if (event.getEntity() instanceof ServerPlayer player && shouldApplyZombieRules(player)
-                && event.getSource().getEntity() instanceof LivingEntity attacker) {
-            reinforceZombiePlayer(player, attacker);
-        }
-
-        if (!(event.getSource().getEntity() instanceof Player player) || !shouldApplyZombieRules(player)) {
-            return;
-        }
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-        if (data.state().form() == ZombieForm.HUSK
-                && event.getSource().getDirectEntity() == player
-                && event.getEntity() instanceof LivingEntity target
-                && target != player) {
-            target.addEffect(new MobEffectInstance(MobEffects.HUNGER, 20 * 15, 0), player);
-        }
     }
 
         public static void onPlayerLoggedIn(Object event) {
-        if (event.getEntity() instanceof ServerPlayer player && shouldApplyZombieRules(player)) {
-            boolean firstZombieAttach = !player.hasData(IAmZombieAttachments.PLAYER_ZOMBIE);
-            PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-            // FORCED: the fresh login entity needs its innate form attributes, and the signature cache entry was
-            // cleared on the prior logout — force the apply so login never depends on a stale/absent cache entry.
-            refreshFormAttributesForced(player, data);
-            IAmZombieAdvancements.award(player, IAmZombieAdvancements.ROOT);
-            warnIfPeacefulUnsupported(player);
-            if (firstZombieAttach) {
-                giveStartingItems(player);
-                unlockCoffinRecipes(player);
-            }
-        }
     }
 
         public static void onPlayerLoggedOut(Object event) {
-        // Drop the player's sun-fire window on disconnect so it can't accumulate in the map for the server's
-        // lifetime, nor mis-attribute a fresh (non-sun) fire to sunlight if they reconnect while it's still open.
-        SUNLIGHT_FIRE_UNTIL.remove(event.getEntity().getUUID());
-        // Drop the cached form-attribute signature so a reconnecting player (whose transient modifiers were
-        // cleared with the old entity) re-applies on login via the forced refresh rather than trusting a stale entry.
-        FORM_ATTRIBUTE_SIGNATURE.remove(event.getEntity().getUUID());
-        // Drop the reinforcement chance so a reconnecting player re-rolls a fresh value (and so accumulated -0.05
-        // penalties don't persist for the server's lifetime).
-        REINFORCEMENT_CHANCE.remove(event.getEntity().getUUID());
-        // Drop the giant walk-destruction sweep anchor + swing cooldown so they can't accumulate for the server's
-        // lifetime (and a reconnecting player starts with a fresh sweep origin / no stale cooldown).
-        GIANT_LAST_POS.remove(event.getEntity().getUUID());
-        GIANT_SWING_COOLDOWN.remove(event.getEntity().getUUID());
     }
 
         public static void onServerStopped(Object event) {
@@ -274,89 +161,9 @@ public final class ZombiePlayerEvents {
     }
 
         public static void onPlayerClone(Object event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !shouldApplyZombieRules(player)) {
-            return;
-        }
-        PlayerZombieData previous = event.getOriginal().getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-        // Ordinary death resets the form to normal zombie (preserving the one-time evolution-reward flags);
-        // a non-death clone (dimension change / End return) carries the form + flags over unchanged. We copy
-        // explicitly here instead of relying on .copyOnDeath() so persistence is correct regardless of
-        // NeoForge's default clone-copy behavior.
-        PlayerZombieData nextData = event.isWasDeath() ? previous.resetStateForOrdinaryDeath() : previous;
-        player.setData(IAmZombieAttachments.PLAYER_ZOMBIE, nextData);
-        player.syncData(IAmZombieAttachments.PLAYER_ZOMBIE);
-        // ADDITIVE (Phase-1 API): observer-only POST fire after the existing write+sync, ONLY when the form
-        // actually changed (an ordinary-death reset from a non-NORMAL form; a NORMAL->NORMAL death or a non-death
-        // dimension clone leaves the form unchanged and is not a transform). Neutral when no addon subscribes;
-        // isolated via ZombieEventPublisher (try/catch). Does NOT gate or change the clone logic.
-        if (previous.state().form() != nextData.state().form()) {
-            ZombieEventPublisher.post(new ZombieTransformedEvent(player, previous.state().form(), nextData.state().form()));
-        }
-        // FORCED: the respawned entity has had its transient attribute modifiers cleared, and a same-form
-        // NORMAL->NORMAL ordinary death leaves the signature unchanged — a cache-gated refresh would skip it.
-        refreshFormAttributesForced(player, nextData);
-        applyPassiveFormAbilities(player, nextData);
     }
 
         public static void onLivingDeath(Object event) {
-        if (event.getEntity() instanceof Giant
-                && event.getEntity().getType() == EntityTypes.GIANT
-                && event.getSource().getEntity() instanceof ServerPlayer killer
-                && ZombieEvolutionRules.canTransformFromGiantKill(killer.isCreative(), BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType()).toString())) {
-            PlayerZombieData data = killer.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-            PlayerZombieData nextData = data.withState(ZombieEvolutionRules.giantStateAfterKill(data.state()));
-            killer.setData(IAmZombieAttachments.PLAYER_ZOMBIE, nextData);
-            killer.syncData(IAmZombieAttachments.PLAYER_ZOMBIE);
-            // ADDITIVE (Phase-1 API): observer-only POST fire for the giant-kill transform, after the existing
-            // write+sync. Neutral when no addon subscribes; isolated via ZombieEventPublisher. Logic unchanged.
-            ZombieEventPublisher.post(new ZombieTransformedEvent(killer, data.state().form(), nextData.state().form()));
-            // FORCED: setHealth(getMaxHealth()) below relies on the GIANT max-health modifier being reapplied now,
-            // even if the giant->giant signature happens to be unchanged.
-            refreshFormAttributesForced(killer, nextData);
-            killer.setHealth(killer.getMaxHealth());
-            return;
-        }
-
-        if (!(event.getEntity() instanceof ServerPlayer player) || !shouldApplyZombieRules(player)) {
-            return;
-        }
-
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-        EvolutionResult result = ZombieEvolutionRules.resolveDeath(
-                data.state(),
-                triggerFrom(event.getSource()),
-                biomeContext(player),
-                dimensionContext(player)
-        );
-
-        if (!result.inPlaceRespawn()) {
-            return;
-        }
-
-        event.setCanceled(true);
-        PlayerZombieData nextData = data.withState(result.nextState());
-        nextData = grantFirstEvolutionReward(player, data, nextData, result);
-        player.setData(IAmZombieAttachments.PLAYER_ZOMBIE, nextData);
-        player.syncData(IAmZombieAttachments.PLAYER_ZOMBIE);
-        // ADDITIVE (Phase-1 API): observer-only POST fire for the death-driven evolution, after the existing
-        // write+sync, carrying the before/after state + outcome snapshot. Neutral when no addon subscribes;
-        // isolated via ZombieEventPublisher. Does NOT add Pre-cancel gating; existing logic unchanged.
-        ZombieEventPublisher.post(new ZombieEvolvedEvent(player, data.state(), nextData.state(), result.outcome()));
-        // FORCED: setHealth(getMaxHealth()*0.5) below relies on the just-evolved form's max-health modifier being
-        // reapplied now; the in-place respawn must restore innate attributes regardless of signature equality.
-        refreshFormAttributesForced(player, nextData);
-        applyPassiveFormAbilities(player, nextData);
-        awardEvolutionAdvancement(player, result);
-        if (isFirstEvolution(data.state(), nextData.state())) {
-            IAmZombieAdvancements.award(player, IAmZombieAdvancements.FIRST_EVOLUTION);
-        }
-
-        player.setHealth(Math.max(1.0F, player.getMaxHealth() * 0.5F));
-        player.setAirSupply(player.getMaxAirSupply());
-        player.clearFire();
-        player.resetFallDistance();
-        player.getFoodData().setFoodLevel(Math.max(player.getFoodData().getFoodLevel(), POST_EVOLUTION_FOOD_LEVEL));
-        player.getFoodData().setSaturation(0.0F);
     }
 
     private static boolean shouldApplyZombieRules(Player player) {
@@ -760,39 +567,6 @@ public final class ZombiePlayerEvents {
     }
 
         public static void onGiantSwing(Object event) {
-        // The giant's active 一拳一大片: a left-click on a block within its long reach blasts a cube centred on the
-        // aimed block. Server-authoritative (ServerPlayer only), gated to the START of the click and a cooldown.
-        if (event.getAction() != Object.Action.START
-                || !(event.getEntity() instanceof ServerPlayer player)
-                || !(player.level() instanceof ServerLevel level)
-                || !shouldApplyZombieRules(player)
-                || player.getData(IAmZombieAttachments.PLAYER_ZOMBIE).state().form() != ZombieForm.GIANT) {
-            return;
-        }
-        long now = level.getGameTime();
-        Long cooldownUntil = GIANT_SWING_COOLDOWN.get(player.getUUID());
-        if (cooldownUntil != null && now < cooldownUntil) {
-            return;
-        }
-        BlockPos center = event.getPos();
-        // Server-side reach validation: reject a block beyond the giant's (already-extended) block reach.
-        double reach = player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE).getValue();
-        if (player.getEyePosition(1.0F).distanceToSqr(Vec3.atCenterOf(center)) > (reach + 1.0) * (reach + 1.0)) {
-            return;
-        }
-        int half = ZombieBalanceRules.giantSwingCubeEdge() / 2;
-        List<BlockPos> cube = new ArrayList<>();
-        for (BlockPos pos : BlockPos.betweenClosed(center.offset(-half, -half, -half), center.offset(half, half, half))) {
-            cube.add(pos.immutable());
-        }
-        // Crush the blocks nearest the impact first, up to the per-swing cap; the punch breaks stone/ores (high
-        // hardness cap) but never obsidian/bedrock/containers, and the loot rakes into the giant's pack.
-        cube.sort(Comparator.comparingDouble(pos -> pos.distSqr(center)));
-        // A committed swing always starts the cooldown — even one that only struck immune/obsidian blocks — so the
-        // giant can't be turned into an infinite instant-miner by clicking unbreakable targets (设计指南 §4.3).
-        GIANT_SWING_COOLDOWN.put(player.getUUID(), now + ZombieBalanceRules.giantSwingCooldownTicks());
-        crushGiantBlocks(level, player, cube, 0.0, false,
-                ZombieBalanceRules.giantSwingMaxBlocks(), ZombieBalanceRules.GIANT_SWING_MAX_HARDNESS, true);
     }
 
     private static void applyAddValueModifier(AttributeInstance attribute, Identifier id, double amount) {
@@ -852,27 +626,7 @@ public final class ZombiePlayerEvents {
     }
 
     private static boolean replaceSunlightFireDamage(Object event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)
-                || !shouldApplyZombieRules(player)
-                || event.getAmount() <= 0.0F) {
-            return false;
-        }
-
-        boolean sourceIsOnFire = event.getSource().is(DamageTypes.ON_FIRE);
-        Long sunlightFireUntil = SUNLIGHT_FIRE_UNTIL.get(player.getUUID());
-        boolean withinSunlightFireWindow = sunlightFireUntil != null && player.level().getGameTime() <= sunlightFireUntil;
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-        HeadProtection headProtection = classifyHeadProtection(player.getItemBySlot(EquipmentSlot.HEAD));
-        boolean formBurnsInSunlight = ZombieSunlightRules.shouldBurn(data.state().form(), true, headProtection);
-        if (!ZombieDamageRules.shouldConvertOnFireDamageToSunlight(sourceIsOnFire, withinSunlightFireWindow, formBurnsInSunlight)) {
-            return false;
-        }
-
-        // Re-attribute this vanilla on-fire tick to the sunlight death type: cancel it and re-deal the same amount
-        // as iamzombieq:sunlight (which is in minecraft:no_knockback, so no knockback / directional hurt indicator).
-        event.setCanceled(true);
-        player.hurtServer(player.level(), player.damageSources().source(SUNLIGHT_DAMAGE), event.getAmount());
-        return true;
+        return false;
     }
 
     private static void igniteSunlightBurn(ServerPlayer player) {

@@ -86,74 +86,12 @@ public final class ZombiePlayerVisuals {
     }
 
     public static void renderMonsterBody(Object event) {
-        if (!ZombieRenderRules.usesMonsterTexture(IAmZombieClientConfig.PLAYER_SKIN_MODE.get())) {
-            return;
-        }
-
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) {
-            return;
-        }
-
-        AvatarRenderState avatarState = event.getRenderState();
-        Entity entity = minecraft.level.getEntity(avatarState.id);
-        if (!(entity instanceof Player player) || !shouldUseZombieVisuals(player)) {
-            return;
-        }
-
-        PlayerZombieData data = player.getData(IAmZombieAttachments.PLAYER_ZOMBIE);
-        boolean baby = data.state().size() == ZombieSize.BABY;
-        ZombieRenderState zombieState = copyToZombieState(avatarState, data.state().form(), baby);
-        EntityModel<? super ZombieRenderState> model = models().modelFor(data.state().form(), baby);
-        Identifier texture = textureFor(data.state().form(), baby);
-
-        PoseStack poseStack = event.getPoseStack();
-        SubmitNodeCollector collector = event.getSubmitNodeCollector();
-        int overlay = LivingEntityRenderer.getOverlayCoords(zombieState, 0.0F);
-        poseStack.pushPose();
-        applyLivingBodyTransform(zombieState, poseStack);
-        collector.submitModel(
-                model,
-                zombieState,
-                poseStack,
-                RenderTypes.entityCutout(texture),
-                zombieState.lightCoords,
-                overlay,
-                -1,
-                null,
-                zombieState.outlineColor,
-                null
-        );
-        submitMonsterBodyLayers(models(), zombieState, avatarState, poseStack, collector);
-        poseStack.popPose();
-        event.setCanceled(true);
+        // TODO: Fabric port — register via Fabric render-layer callback instead of Object event
     }
 
     @SuppressWarnings("deprecation")
     public static void renderFirstPersonArm(Object event) {
-        if (renderingFirstPersonArm) {
-            return;
-        }
-        if (!ZombieRenderRules.usesMonsterTexture(IAmZombieClientConfig.FIRST_PERSON_ARM_SKIN_MODE.get())
-                || !shouldUseZombieVisuals(event.getPlayer())) {
-            return;
-        }
-
-        Identifier texture = textureFor(event.getPlayer().getData(IAmZombieAttachments.PLAYER_ZOMBIE));
-        AvatarRenderer<AbstractClientPlayer> renderer = Minecraft.getInstance()
-                .getEntityRenderDispatcher()
-                .getPlayerRenderer(event.getPlayer());
-        renderingFirstPersonArm = true;
-        try {
-            if (event.getArm() == HumanoidArm.RIGHT) {
-                renderer.renderRightHand(event.getPoseStack(), event.getSubmitNodeCollector(), event.getPackedLight(), texture, false);
-            } else {
-                renderer.renderLeftHand(event.getPoseStack(), event.getSubmitNodeCollector(), event.getPackedLight(), texture, false);
-            }
-        } finally {
-            renderingFirstPersonArm = false;
-        }
-        event.setCanceled(true);
+        // TODO: Fabric port — register via Fabric render callback instead of Object event
     }
 
     static boolean shouldUseZombieVisuals(Player player) {
