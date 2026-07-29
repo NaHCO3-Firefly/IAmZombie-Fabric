@@ -2,7 +2,12 @@
 
 > A Minecraft mod where you play as the zombie: beds explode, you sleep in coffins, villagers flee.
 
+**Original author**: [molang](https://github.com/molang30) — NeoForge version
+**Fabric port**: [NaHCO3-Firefly](https://github.com/NaHCO3-Firefly) — MC 26.2 Fabric
+
 [English](#english) | [中文](#中文)
+
+> **Fabric Port Status**: This is a [Fabric](https://fabricmc.net/) port of the original NeoForge mod, targeting Minecraft **26.2** (non-obfuscated mode). All 8 custom API events are loader-agnostic POJOs. The server-side game logic and registry system have been migrated; client rendering and GameTest porting are ongoing.
 
 ## English
 
