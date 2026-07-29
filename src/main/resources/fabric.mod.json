@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "Every survival player is a zombie. Burn, rot, disguise yourself badly, and make villages regret teaching Steve how to place blocks.",
+  "authors": [
+    "molang"
+  ],
+  "contact": {
+    "homepage": "https://github.com/molang30/IAmZombie-Fabric"
+  },
+  "license": "${mod_license}",
+  "icon": "iamzombieq.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.molang.iamzombieq.IAmZombieMod"
+    ],
+    "client": [
+      "dev.molang.iamzombieq.client.IAmZombieClient"
+    ]
+  },
+  "mixins": [
+    "iamzombieq.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "${minecraft_version_range}",
+    "java": ">=25",
+    "fabric-api": "*",
+    "cloth-config": "*",
+    "cardinal-components-base": "*",
+    "cardinal-components-entity": "*"
+  },
+  "suggests": {
+  }
+}

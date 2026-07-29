@@ -1,26 +1,25 @@
 package dev.molang.iamzombieq.platform;
 
-import net.neoforged.bus.api.Event;
-import net.neoforged.bus.api.ICancellableEvent;
+import dev.molang.iamzombieq.api.event.Cancellable;
+import dev.molang.iamzombieq.api.event.ZombieEvent;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
- * Portability seam (PLAN D3) for posting the mod's lifecycle events. The NeoForge implementation delegates to
- * {@code NeoForge.EVENT_BUS.post(...)}; abstracting it lets new internal code post without naming the concrete
- * bus, easing a future multi-loader port.
+ * Portability seam for posting the mod's lifecycle events. The Fabric implementation dispatches to registered
+ * listeners; abstracting it lets internal code post without naming the concrete event bus.
  *
- * <p>Consumed only by NEW Phase-1 code (via {@code internal.event.ZombieEventPublisher}). Existing handlers are
- * unchanged.
+ * <p>Consumed only by internal code (via {@code internal.event.ZombieEventPublisher}).
  */
 @ApiStatus.Internal
 public interface EventBusService {
 
-    /** Posts an observer event onto the bus. Returns the same event instance (mirrors {@code IEventBus#post}). */
-    <T extends Event> T post(T event);
+    /** Posts an observer event. Returns the same event instance. */
+    <T extends ZombieEvent> T post(T event);
 
     /**
-     * Posts a cancellable event and reports whether a listener canceled it. The event is posted via {@link #post}
-     * and the result is read from {@link ICancellableEvent#isCanceled()}.
+     * Posts a cancellable event and reports whether a listener canceled it.
+     *
+     * @return {@code true} if a listener canceled the event; {@code false} otherwise.
      */
-    <T extends Event & ICancellableEvent> boolean postCancelable(T event);
+    <T extends ZombieEvent & Cancellable> boolean postCancelable(T event);
 }

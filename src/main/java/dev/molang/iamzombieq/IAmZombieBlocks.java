@@ -3,53 +3,38 @@ package dev.molang.iamzombieq;
 import dev.molang.iamzombieq.block.CoffinBlock;
 import dev.molang.iamzombieq.block.HerobrineHeadBlock;
 import dev.molang.iamzombieq.block.HerobrineWallHeadBlock;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntityTypes;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class IAmZombieBlocks {
-    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IAmZombieMod.MOD_ID);
-
-    // A single wood-agnostic coffin block; any wood crafts it (see recipes) and it always renders the
-    // bespoke coffin textures (the CoffinBlock model derives from the shared template_coffin*).
-    public static final DeferredBlock<CoffinBlock> COFFIN = BLOCKS.registerBlock(
+    public static final CoffinBlock COFFIN = register(
             "coffin",
-            CoffinBlock::new,
-            () -> BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).noOcclusion()
+            new CoffinBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).noOcclusion())
     );
 
-    // The Herobrine head as a proper vanilla-style skull: a placeable floor + wall block pair sharing the
-    // vanilla SkullBlockEntity/renderer. Properties copied from the skeleton skull so it behaves exactly like a
-    // vanilla head (strength, sound, push reaction, no occlusion).
-    public static final DeferredBlock<HerobrineHeadBlock> HEROBRINE_HEAD = BLOCKS.registerBlock(
+    public static final HerobrineHeadBlock HEROBRINE_HEAD = register(
             "herobrine_head",
-            HerobrineHeadBlock::new,
-            () -> BlockBehaviour.Properties.ofFullCopy(Blocks.SKELETON_SKULL)
+            new HerobrineHeadBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.SKELETON_SKULL))
     );
 
-    public static final DeferredBlock<HerobrineWallHeadBlock> HEROBRINE_WALL_HEAD = BLOCKS.registerBlock(
+    public static final HerobrineWallHeadBlock HEROBRINE_WALL_HEAD = register(
             "herobrine_wall_head",
-            HerobrineWallHeadBlock::new,
-            () -> BlockBehaviour.Properties.ofFullCopy(Blocks.SKELETON_WALL_SKULL)
+            new HerobrineWallHeadBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.SKELETON_WALL_SKULL))
     );
 
     private IAmZombieBlocks() {
     }
 
-    public static void register(IEventBus modEventBus) {
-        BLOCKS.register(modEventBus);
-        modEventBus.addListener(IAmZombieBlocks::addSkullBlocks);
+    private static <T extends Block> T register(String id, T block) {
+        return Registry.register(BuiltInRegistries.BLOCK, Identifier.of(IAmZombieMod.MOD_ID, id), block);
     }
 
-    // SkullBlockEntity hard-codes BlockEntityTypes.SKULL in its constructor, so our head blocks must join that
-    // existing block-entity type (both are AbstractSkullBlock subclasses, satisfying the common-superclass rule).
-    // This makes their block entities save/load correctly and renders them via the already-registered vanilla
-    // SkullBlockRenderer — no custom block entity, block-entity type, or BER registration needed.
-    private static void addSkullBlocks(BlockEntityTypeAddBlocksEvent event) {
-        event.modify(BlockEntityTypes.SKULL, HEROBRINE_HEAD.get(), HEROBRINE_WALL_HEAD.get());
+    public static void register() {
+        // static initializers are triggered by class load; this method forces the class to load
+        IAmZombieMod.LOGGER.debug("Registered {} blocks", 3);
     }
 }

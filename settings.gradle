@@ -1,9 +1,36 @@
 pluginManagement {
     repositories {
+        // 中国镜像优先 — 腾讯 / 阿里云代理 Maven Central 和通用仓库
+        maven { name = 'Tencent'; url = 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        maven { name = 'Aliyun'; url = 'https://maven.aliyun.com/repository/public/' }
+        maven { name = 'Aliyun-GradlePlugin'; url = 'https://maven.aliyun.com/repository/gradle-plugin/' }
+        // BMCLAPI 代理 Minecraft 专用仓库（Fabric、Forge 等）
+        maven { name = 'BMCLAPI'; url = 'https://bmclapi2.bangbang93.com/maven' }
         gradlePluginPortal()
+        mavenCentral()
+        maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
     }
 }
 
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        // 中国镜像优先 — 腾讯 / 阿里云代理 Maven Central 和通用仓库
+        maven { name = 'Tencent'; url = 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        maven { name = 'Aliyun'; url = 'https://maven.aliyun.com/repository/public/' }
+        // BMCLAPI 代理 Minecraft 专用仓库（Fabric、Modrinth、Ladysnake、Shedaniel、Terraformers 等）
+        maven { name = 'BMCLAPI'; url = 'https://bmclapi2.bangbang93.com/maven' }
+        mavenCentral()
+        maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+        maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven/' }
+        maven { name = 'Ladylelou'; url = 'https://maven.ladysnake.org/releases/' }  // Cardinal Components
+        maven { name = 'Shedaniel'; url = 'https://maven.shedaniel.me/' }             // Cloth Config
+        maven { name = 'Terraformers'; url = 'https://maven.terraformersmc.com/' }     // EMI (optional)
+    }
+}
+
+rootProject.name = 'iamzombieq'

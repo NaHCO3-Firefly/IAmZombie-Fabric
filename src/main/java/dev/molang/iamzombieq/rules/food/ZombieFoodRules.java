@@ -13,9 +13,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.minecraft.world.item.Item;
 
 public final class ZombieFoodRules {
     public static final String SUPER_ROTTEN_FLESH_ID = "iamzombieq:super_rotten_flesh";
@@ -118,11 +117,11 @@ public final class ZombieFoodRules {
      * loaded (e.g. in plain unit tests that never bootstrap the mod). At runtime the config is always loaded, so this
      * returns the configured value.
      */
-    private static int cfg(ModConfigSpec.IntValue value) {
+    private static int cfg(Supplier<Integer> value) {
         try {
             return value.get();
-        } catch (IllegalStateException notLoaded) {
-            return value.getDefault();
+        } catch (Exception notLoaded) {
+            return 0;
         }
     }
 
