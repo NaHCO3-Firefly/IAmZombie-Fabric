@@ -63,26 +63,51 @@ public final class ZombieMountEvents {
     private ZombieMountEvents() {
     }
 
-        public static void onEntityInteract(Object event) {
+    public static InteractionResult onEntityInteract(Player player, Level level, InteractionHand hand, Entity target) {
+        if (level.isClientSide() || !isZombiePlayer(player) || !(player instanceof ServerPlayer serverPlayer)) {
+            return InteractionResult.PASS;
+        }
+        ItemStack stack = player.getItemInHand(hand);
+
+        // Spider taming/interaction
+        if (target instanceof Spider spider) {
+            if (!stack.isEmpty() && ZombieMountRules.isSpiderTameFood(stack)) {
+                handleSpiderFood(serverPlayer, spider, stack, null);
+                return InteractionResult.CONSUME;
+            }
+            return handleSpiderInteract(serverPlayer, spider);
+        }
+
+        // Big zombie mounting
+        if (target instanceof Zombie zombie && zombie.isAdult()) {
+            return handleBigZombieInteract(serverPlayer, zombie);
+        }
+
+        // Chicken mounting (baby only)
+        if (target instanceof Chicken chicken && dataOf(serverPlayer).state().size() == ZombieSize.BABY) {
+            return handleChickenInteract(serverPlayer, chicken);
+        }
+
+        // Horse feeding → zombie horse conversion tracking
+        if (isNormalHorse(target) && !stack.isEmpty() && isZombieHorseFood(stack)) {
+            handleHorseFeed(serverPlayer, (Horse) target, stack);
+            return InteractionResult.CONSUME;
+        }
+
+        return InteractionResult.PASS;
     }
 
-        public static void onEntityMount(Object event) {
+    public static void onLivingDeath(ServerPlayer player, Entity victim) {
+        if (victim instanceof Horse horse && isNormalHorse(horse)) {
+            convertHorseToZombieHorse(horse, player);
+        }
+        if (victim instanceof Nautilus nautilus) {
+            convertNautilusToZombieNautilus(nautilus, player);
+        }
     }
 
-        public static void onIncomingDamage(Object event) {
-    }
-
-        public static void onLivingDeath(Object event) {
-    }
-
-        public static void onServerStopped(Object event) {
+    public static void onServerStopped() {
         PENDING_HORSE_HEALTH_RATIOS.clear();
-    }
-
-        public static void onLivingChangeTarget(Object event) {
-    }
-
-        public static void onEntityTick(Object event) {
     }
 
     private static boolean isZombiePlayer(Player player) {
