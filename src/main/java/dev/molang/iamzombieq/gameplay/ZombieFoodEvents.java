@@ -78,7 +78,28 @@ public final class ZombieFoodEvents {
     public static void onItemUseStarted() {
     }
 
-    public static void onItemUseFinished() {
+    public static void onItemUseFinished(ServerPlayer player) {
+        if (!shouldProcessZombieFood(player)) return;
+        var stack = player.getUseItem();
+        if (stack.isEmpty() || !isFood(stack)) return;
+        String id = itemId(stack);
+        if (!ZombieFoodRules.isFoodRuleTarget(id)) return;
+        var rule = resolveFoodRule(player, stack, id);
+        if (rule == null) return;
+
+        // Apply zombie food effects
+        applyZombieEffects(player, rule, id);
+
+        // Handle baby → adult growth for super rotten flesh
+        if (rule.restoresBabyState()) {
+            var pzd = dev.molang.iamzombieq.platform.Services.ATTACHMENT.get(player,
+                    IAmZombieAttachments.PLAYER_ZOMBIE_KEY, PlayerZombieData.DEFAULT);
+            dev.molang.iamzombieq.internal.core.ServerZombiePlayer.of(player).setSize(dev.molang.iamzombieq.rules.core.ZombieSize.ADULT);
+        }
+
+        // Fire API event
+        var ateEvent = new ZombieAteEvent(player, stack, rule);
+        ZombieEventPublisher.post(ateEvent);
     }
 
     public static void onItemUseStopped() {
@@ -174,10 +195,38 @@ public final class ZombieFoodEvents {
         restoreGoldenAppleEffects(player, preserved, elapsedTicks);
     }
 
-    private static void applyZombieEffects(Player player, FoodRule rule, String eatenId) { // TODO: Fabric port
+    private static void applyZombieEffects(Player player, FoodRule rule, String eatenId) {
+        // Remove vanilla food benefits (saturation, etc.) – zombie food doesn't saturate normally
+        // Apply custom buffs from the food rule
+        for (var buff : rule.buffs()) {
+            player.addEffect(new MobEffectInstance(
+                    buff.effect(), buff.durationTicks(), buff.amplifier()));
+        }
+        // Apply debuffs (human food punishment)
+        if (rule.appliesHumanFoodPunishment()) {
+            applyHumanFoodPunishment(player, ZombieFoodRules.humanFoodPunishmentSettings(
+                    IAmZombieConfig.COOKED_HUMAN_FOOD_NAUSEA_DURATION.get(),
+                    IAmZombieConfig.COOKED_HUMAN_FOOD_HUNGER_DURATION.get(),
+                    0));
+        }
+        for (var debuff : rule.debuffs()) {
+            player.addEffect(new MobEffectInstance(
+                    debuff.effect(), debuff.durationTicks(), debuff.amplifier()));
+        }
+        // Handle random positive effect for poisonous potato
+        if (eatenId.equals("minecraft:poisonous_potato")) {
+            applyRandomSmallPositive(player);
+        }
     }
 
-    private static void applyRandomSmallPositive(Player player) { // TODO: Fabric port
+    private static void applyRandomSmallPositive(Player player) {
+        var effects = new MobEffectInstance[] {
+                new MobEffectInstance(MobEffects.SPEED, 600, 0),
+                new MobEffectInstance(MobEffects.HASTE, 600, 0),
+                new MobEffectInstance(MobEffects.LUCK, 600, 0)
+        };
+        MobEffectInstance chosen = effects[player.getRandom().nextInt(effects.length)];
+        player.addEffect(chosen);
     }
 
     private static ZombieFoodRules.PreservedFoodPunishments preserveExistingFoodPunishments(Player player) {

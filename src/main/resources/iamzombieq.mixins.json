@@ -9,6 +9,7 @@
     "MinecraftServerMixin",
     "MobMixin",
     "PlayerCoffinSleepMixin",
+    "ServerPlayerFoodMixin",
     "SpiderMixin",
     "VillagerHostilesSensorMixin",
     "WanderingTraderMixin"
