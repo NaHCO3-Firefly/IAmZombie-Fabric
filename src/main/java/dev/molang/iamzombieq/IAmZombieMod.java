@@ -43,6 +43,7 @@ public final class IAmZombieMod implements ModInitializer {
         // Player login/logout
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             dev.molang.iamzombieq.gameplay.ZombiePlayerEvents.onPlayerLoggedIn(handler.getPlayer());
+            dev.molang.iamzombieq.gameplay.HerobrineEvents.onPlayerRespawn(handler.getPlayer());
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             var player = handler.getPlayer();
@@ -55,15 +56,17 @@ public final class IAmZombieMod implements ModInitializer {
             if (entity instanceof net.minecraft.server.level.ServerPlayer player) {
                 dev.molang.iamzombieq.gameplay.ZombiePlayerEvents.onPlayerClone(player);
             }
+            dev.molang.iamzombieq.gameplay.HerobrineEvents.onEntityJoinLevel(entity, (net.minecraft.server.level.ServerLevel) level);
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
-            // handled by DISCONNECT for players
+            dev.molang.iamzombieq.gameplay.HerobrineEvents.onEntityLeaveLevel(entity, (net.minecraft.server.level.ServerLevel) level);
         });
 
         // Tick - iterate all players
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
                 dev.molang.iamzombieq.gameplay.ZombiePlayerEvents.onPlayerTick(player);
+                dev.molang.iamzombieq.gameplay.HerobrineEvents.onPlayerTick(player);
                 dev.molang.iamzombieq.gameplay.CoffinNapManager.tickPlayer(player);
             }
         });
