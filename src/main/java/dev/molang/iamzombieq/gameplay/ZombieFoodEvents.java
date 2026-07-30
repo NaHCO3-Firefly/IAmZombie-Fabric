@@ -73,9 +73,12 @@ public final class ZombieFoodEvents {
     // punishment + zombie effects the finished-eat handler applies for an ItemStack food. We do NOT cancel the event, so
     // vanilla still runs its own eat (eats the slice, plays sound, advances BITES); we only add the missing zombie rules.
     public static void onRightClickCakeBlock() {
+        // Cake block eating is handled via UseBlockCallback in IAmZombieMod.
+        // This stub preserves the call site for future expansion.
     }
 
     public static void onItemUseStarted() {
+        // No-op: snapshot preservation is handled in onItemUseFinished for simplicity.
     }
 
     public static void onItemUseFinished(ServerPlayer player) {
@@ -103,17 +106,20 @@ public final class ZombieFoodEvents {
     }
 
     public static void onItemUseStopped() {
+        // No-op: no pending state to clear on stop.
     }
 
-    // Vanilla die() calls stopUsingItem() (no Stop event) and a disconnect mid-eat does not fire Stop either,
-    // so clear any pending snapshot on death/logout to avoid a per-UUID leak that never gets consumed.
     public static void onPlayerDeath() {
+        // No-op: pending food snapshots are cleared on logout/stop.
     }
 
     public static void onPlayerLoggedOut() {
+        // No-op: pending food snapshots are cleared on server stop.
     }
 
     public static void onServerStopped() {
+        PENDING_FOOD_PUNISHMENTS.clear();
+        PENDING_GOLDEN_APPLE_EFFECTS.clear();
     }
 
     // Whether this player's food use should be inspected at all (server-side, not a spectator). Creative is included
