@@ -81,7 +81,7 @@ public final class IAmZombieMod implements ModInitializer {
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) ->
                 dev.molang.iamzombieq.gameplay.ZombieMountEvents.onEntityInteract(player, world, hand, entity));
 
-        // Death events — zombie evolution + mount conversions
+        // Death events — zombie evolution + mount conversions + infection
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (entity instanceof net.minecraft.server.level.ServerPlayer player) {
                 dev.molang.iamzombieq.gameplay.ZombiePlayerEvents.onLivingDeath(player, source);
@@ -91,6 +91,8 @@ public final class IAmZombieMod implements ModInitializer {
                 if (level instanceof ServerLevel sl && entity.getControllingPassenger() instanceof ServerPlayer rider) {
                     dev.molang.iamzombieq.gameplay.ZombieMountEvents.onLivingDeath(rider, entity);
                 }
+                // Infection: villager/pig/piglin conversion
+                dev.molang.iamzombieq.gameplay.ZombieInfectionEvents.onLivingDeath(entity, source);
             }
         });
 

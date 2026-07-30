@@ -2,9 +2,6 @@ package dev.molang.iamzombieq.gameplay;
 import dev.molang.iamzombieq.util.Difficulties;
 
 import dev.molang.iamzombieq.IAmZombieConfig;
-import dev.molang.iamzombieq.api.event.ZombieInfectPreEvent;
-import dev.molang.iamzombieq.api.event.ZombieInfectedEvent;
-import dev.molang.iamzombieq.internal.event.ZombieEventPublisher;
 import dev.molang.iamzombieq.rules.difficulty.GameDifficulty;
 import dev.molang.iamzombieq.rules.ZombieInfectionRules;
 import net.minecraft.server.level.ServerLevel;
@@ -13,6 +10,7 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.ConversionParams;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -28,18 +26,53 @@ public final class ZombieInfectionEvents {
     private ZombieInfectionEvents() {
     }
 
-        public static void onLivingDeath(Object event) {
+    /**
+     * Called when a living entity dies. If the killer is a zombie player, check for infection opportunities.
+     */
+    public static void onLivingDeath(LivingEntity entity, DamageSource source) {
+        if (entity.level().isClientSide()) {
+            return;
+        }
+        if (!(source.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        if (!isZombiePlayer(player)) {
+            return;
+        }
+        if (!(entity.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        if (entity instanceof Villager villager) {
+            tryInfectVillager(level, villager, player);
+        } else if (entity instanceof Pig || entity instanceof AbstractPiglin) {
+            tryInfectIntoZombifiedPiglin(level, (Mob) entity, player);
+        }
     }
 
-    private static void tryInfectVillager(Object event, ServerLevel level, Villager villager, Player player) {
+    private static void tryInfectVillager(ServerLevel level, Villager villager, Player player) {
+        GameDifficulty difficulty = gameDifficulty(level.getDifficulty());
+        double roll = level.getRandom().nextDouble();
+        if (ZombieInfectionRules.shouldInfect(difficulty, roll)) {
+            if (convertVillagerToZombieVillager(level, villager, player)) {
+                awardInfection(player);
+            }
+        }
     }
 
-    // N1: a zombie player that kills a Pig OR any Piglin/AbstractPiglin can infect it into a zombified piglin, mirroring
-    // the villager infection (difficulty-scaled chance, Object.canLivingConvert gate, INFECTION advancement). Both
-    // source types convert to ZOMBIFIED_PIGLIN, matching vanilla's pig+lightning zombification. Form-gated (see the
-    // call site): ONLY a ZOMBIFIED_PIGLIN-form zombie player infects pigs/piglins into zombified piglins (the form is
-    // the "kin" of what it spreads); NORMAL/DROWNED/HUSK/GIANT cannot.
-    private static void tryInfectIntoZombifiedPiglin(Object event, ServerLevel level, Mob victim, Player player) {
+    private static void tryInfectIntoZombifiedPiglin(ServerLevel level, Mob victim, Player player) {
+        boolean isPig = victim instanceof Pig;
+        boolean isPiglin = victim instanceof AbstractPiglin;
+        if (!ZombieInfectionRules.canInfectIntoZombifiedPiglin(isPig, isPiglin)) {
+            return;
+        }
+        GameDifficulty difficulty = gameDifficulty(level.getDifficulty());
+        double roll = level.getRandom().nextDouble();
+        if (ZombieInfectionRules.shouldInfect(difficulty, roll)) {
+            if (convertToZombifiedPiglin(level, victim, player)) {
+                awardInfection(player);
+            }
+        }
     }
 
     private static void awardInfection(Player player) {
@@ -48,8 +81,6 @@ public final class ZombieInfectionEvents {
         }
     }
 
-    // N6: creative players are full zombies, so the infection no longer requires survival mode. Only spectators are
-    // excluded (they cannot be the killing entity in practice, but keep the guard for parity with the other gates).
     private static boolean isZombiePlayer(Player player) {
         return !player.isSpectator();
     }
@@ -74,31 +105,17 @@ public final class ZombieInfectionEvents {
                     zombie.setGossips(villager.getGossips().copy());
                     zombie.setTradeOffers(villager.getOffers().copy());
                     zombie.setVillagerXp(villager.getVillagerXp());
-                    // Object.onLivingConvert(villager, zombie);
                     if (!villager.isSilent()) {
                         level.levelEvent(null, 1026, villager.blockPosition(), 0);
                     }
                 }
         );
         if (zombieVillager != null) {
-            // RC4-sweep (Option B): the SAME swing's Sweeping-Edge AoE will clip this freshly-spawned kin a moment
-            // later (Player.attack -> doSweepAttack, same tick), seeding it with the player as its last attacker.
-            // Record a short grace window so the deny-list treats that conversion-swing sweep as non-provoking;
-            // genuine later retaliation (a deliberate strike after the window) is preserved.
             ZombieMobTargetingEvents.recordConversionGrace(zombieVillager, player);
         }
         return zombieVillager != null;
     }
 
-    // Mirrors vanilla Pig#thunderHit's pig -> zombified piglin conversion (ConversionParams.single(victim, false, true):
-    // keepEquipment=false, preserveCanPickUpLoot=true; populateDefaultEquipmentSlots + setPersistenceRequired) and the villager pattern above
-    // (conversion levelEvent only). The converted mob is seeded with NO attacker, so the kin zombie player stays
-    // IGNORED from tick one (RC4). The one residual provoker is the SAME swing's Sweeping-Edge sweep, which clips
-    // the freshly-spawned kin a moment later in the same Player.attack call; the conversion grace window recorded
-    // below (honoured by ZombieMobTargetingEvents) neutralises that -- and because the kin is a NeutralMob, the
-    // deny-list also clears the sweep-derived persistent anger so it cannot re-acquire the player after the window.
-    // Genuine retaliation still works because a real later strike re-seeds the kin's last attacker (and anger).
-    // Works for both Pig and any Piglin/AbstractPiglin victim.
     private static boolean convertToZombifiedPiglin(ServerLevel level, Mob victim, Player player) {
         ZombifiedPiglin zombifiedPiglin = victim.convertTo(
                 EntityTypes.ZOMBIFIED_PIGLIN,
@@ -112,7 +129,6 @@ public final class ZombieInfectionEvents {
                             null
                     );
                     piglin.setPersistenceRequired();
-                    // Object.onLivingConvert(victim, piglin);
                     if (!victim.isSilent()) {
                         level.levelEvent(null, 1026, victim.blockPosition(), 0);
                     }
