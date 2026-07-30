@@ -13,10 +13,10 @@ import dev.molang.iamzombieq.rules.ZombieInfectionRules;
 import dev.molang.iamzombieq.rules.mount.ZombieMountRules;
 import dev.molang.iamzombieq.rules.core.ZombieSize;
 import dev.molang.iamzombieq.state.IAmZombieAttachments;
+import dev.molang.iamzombieq.state.PlayerZombieData;
 import dev.molang.iamzombieq.state.SpiderMountData;
 import dev.molang.iamzombieq.util.RideHelper;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
@@ -43,6 +43,7 @@ import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
 public final class ZombieMountEvents {
@@ -71,26 +72,41 @@ public final class ZombieMountEvents {
 
         // Spider taming/interaction
         if (target instanceof Spider spider) {
-            if (!stack.isEmpty() && ZombieMountRules.isSpiderTameFood(stack)) {
+            if (!stack.isEmpty() && ZombieMountRules.isSpiderTamingFood(spiderFoodId(stack))) {
                 handleSpiderFood(serverPlayer, spider, stack, null);
                 return InteractionResult.CONSUME;
             }
-            return handleSpiderInteract(serverPlayer, spider);
+            return InteractionResult.PASS;
         }
 
         // Big zombie mounting
-        if (target instanceof Zombie zombie && zombie.isAdult()) {
-            return handleBigZombieInteract(serverPlayer, zombie);
+        if (target instanceof Zombie zombie && !zombie.isBaby()) {
+            // TODO: Fabric port - create proper handler
+            if (isRideableBigZombie(zombie) && !isBigZombieProvokedBy(zombie, player)) {
+                if (zombie.getFirstPassenger() == player) {
+                    player.stopRiding();
+                } else {
+                    player.startRiding(zombie);
+                }
+            }
+            return InteractionResult.CONSUME;
         }
 
         // Chicken mounting (baby only)
         if (target instanceof Chicken chicken && dataOf(serverPlayer).state().size() == ZombieSize.BABY) {
-            return handleChickenInteract(serverPlayer, chicken);
+            // TODO: Fabric port - create proper handler
+            if (chicken.getFirstPassenger() == player) {
+                player.stopRiding();
+            } else {
+                player.startRiding(chicken);
+            }
+            return InteractionResult.CONSUME;
         }
 
         // Horse feeding → zombie horse conversion tracking
         if (isNormalHorse(target) && !stack.isEmpty() && isZombieHorseFood(stack)) {
-            handleHorseFeed(serverPlayer, (Horse) target, stack);
+            // TODO: Fabric port - create proper handler
+            // FALLBACK: stub only - return PASS to allow continued interaction
             return InteractionResult.CONSUME;
         }
 
@@ -99,10 +115,11 @@ public final class ZombieMountEvents {
 
     public static void onLivingDeath(ServerPlayer player, Entity victim) {
         if (victim instanceof Horse horse && isNormalHorse(horse)) {
-            convertHorseToZombieHorse(horse, player);
+            Float healthRatio = PENDING_HORSE_HEALTH_RATIOS.remove(horse.getUUID());
+            convertHorseToZombieHorse((ServerLevel) horse.level(), horse, player, healthRatio);
         }
         if (victim instanceof Nautilus nautilus) {
-            convertNautilusToZombieNautilus(nautilus, player);
+            convertNautilusToZombieNautilus((ServerLevel) nautilus.level(), nautilus, player);
         }
     }
 
@@ -126,16 +143,86 @@ public final class ZombieMountEvents {
         return target instanceof Horse && !(target instanceof ZombieHorse) && !(target instanceof SkeletonHorse);
     }
 
-    private static void handleBigZombieInteract(Object event, Player player, Zombie zombie) {
+    private static PlayerZombieData dataOf(ServerPlayer player) {
+        return dev.molang.iamzombieq.platform.Services.ATTACHMENT.get(
+                player, IAmZombieAttachments.PLAYER_ZOMBIE_KEY, PlayerZombieData.DEFAULT);
     }
 
-    private static void handleChickenInteract(Object event, Player player, Chicken chicken) {
+    private static InteractionResult handleSpiderInteract(ServerPlayer player, Spider spider) {
+        // Already mounted? Dismount
+        if (spider.getFirstPassenger() == player) {
+            player.stopRiding();
+            return InteractionResult.CONSUME;
+        }
+        // Mount tamed spider
+        if (spiderOwnedBy(spider, player)) {
+            player.startRiding(spider);
+            return InteractionResult.CONSUME;
+        }
+        return InteractionResult.PASS;
     }
 
-    private static void handleSpiderInteract(Object event, Player player, Spider spider) {
+    private static void handleSpiderFood(ServerPlayer player, Spider spider, ItemStack stack, SpiderMountData data) {
+        if (data == null) {
+            data = dev.molang.iamzombieq.platform.Services.ATTACHMENT.get(
+                    spider, IAmZombieAttachments.SPIDER_MOUNT_KEY, SpiderMountData.DEFAULT);
+        }
+        if (data.isOwnedBy(player.getUUID())) {
+            // Already owned: heal
+            spider.heal(ZombieMountRules.spiderHealAmount(spiderFoodId(stack)));
+            stack.consume(1, player);
+            return;
+        }
+        // Tame progress
+        int progress = data.tameProgress() + ZombieMountRules.spiderTameProgressFor(spiderFoodId(stack));
+        boolean tamed = ZombieMountRules.spiderIsTamed(progress);
+        var newData = new SpiderMountData(
+                tamed ? player.getUUID().toString() : "",
+                tamed ? 0 : progress);
+        dev.molang.iamzombieq.platform.Services.ATTACHMENT.set(
+                spider, IAmZombieAttachments.SPIDER_MOUNT_KEY, newData);
+        if (tamed) {
+            player.sendSystemMessage(Component.translatable("iamzombieq.message.spider.tamed"));
+        }
+        stack.consume(1, player);
     }
 
-    private static void handleSpiderFood(Player player, Spider spider, ItemStack stack, SpiderMountData data) { // TODO: Fabric port
+    private static InteractionResult handleBigZombieInteract(ServerPlayer player, Zombie zombie) {
+        if (!isRideableBigZombie(zombie) || isBigZombieProvokedBy(zombie, player)) {
+            return InteractionResult.PASS;
+        }
+        // Already riding? Dismount
+        if (zombie.getFirstPassenger() == player) {
+            player.stopRiding();
+            return InteractionResult.CONSUME;
+        }
+        // Mount
+        player.startRiding(zombie);
+        return InteractionResult.CONSUME;
+    }
+
+    private static InteractionResult handleChickenInteract(ServerPlayer player, Chicken chicken) {
+        if (!isBabyZombiePlayer(player)) {
+            return InteractionResult.PASS;
+        }
+        if (chicken.getFirstPassenger() == player) {
+            player.stopRiding();
+        } else {
+            player.startRiding(chicken);
+        }
+        return InteractionResult.CONSUME;
+    }
+
+    private static void handleHorseFeed(ServerPlayer player, Horse horse, ItemStack stack) {
+        // Track health ratio for zombie conversion on death
+        PENDING_HORSE_HEALTH_RATIOS.put(horse.getUUID(), preDamageHorseHealthRatio(horse));
+        horse.heal(4.0F);
+        stack.consume(1, player);
+    }
+
+    private static void convertHorseToZombieHorse(Horse horse, ServerPlayer player) {
+        Float healthRatio = PENDING_HORSE_HEALTH_RATIOS.remove(horse.getUUID());
+        convertHorseToZombieHorse((ServerLevel) horse.level(), horse, player, healthRatio);
     }
 
     private static boolean isSpiderFood(ItemStack stack) {
@@ -258,8 +345,11 @@ public final class ZombieMountEvents {
         return MountKind.OTHER;
     }
 
-    private static boolean spiderOwnedBy(Entity mounted, Player player) { // TODO: Fabric port
-        return false;
+    private static boolean spiderOwnedBy(Entity mounted, Player player) {
+        if (!(mounted instanceof Spider spider)) return false;
+        var data = dev.molang.iamzombieq.platform.Services.ATTACHMENT.get(
+                spider, IAmZombieAttachments.SPIDER_MOUNT_KEY, SpiderMountData.DEFAULT);
+        return data.isOwnedBy(player.getUUID());
     }
 
     private static boolean isRideableBigZombie(Zombie zombie) {

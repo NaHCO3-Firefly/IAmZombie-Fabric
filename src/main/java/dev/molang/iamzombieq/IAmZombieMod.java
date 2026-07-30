@@ -3,6 +3,7 @@ package dev.molang.iamzombieq;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -11,6 +12,8 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 public final class IAmZombieMod implements ModInitializer {
     public static final String MOD_ID = "iamzombieq";
@@ -74,10 +77,20 @@ public final class IAmZombieMod implements ModInitializer {
         UseItemCallback.EVENT.register((player, world, hand) ->
                 dev.molang.iamzombieq.gameplay.ZombieFoodEvents.onRightClickItem(player, world, hand));
 
-        // Death events — zombie evolution
+        // Entity interaction — mounts (spider, chicken, big zombie, horse feeding)
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) ->
+                dev.molang.iamzombieq.gameplay.ZombieMountEvents.onEntityInteract(player, world, hand, entity));
+
+        // Death events — zombie evolution + mount conversions
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (entity instanceof net.minecraft.server.level.ServerPlayer player) {
                 dev.molang.iamzombieq.gameplay.ZombiePlayerEvents.onLivingDeath(player, source);
+            } else {
+                // Mount conversions: horse -> zombie horse, nautilus -> zombie nautilus
+                var level = entity.level();
+                if (level instanceof ServerLevel sl && entity.getControllingPassenger() instanceof ServerPlayer rider) {
+                    dev.molang.iamzombieq.gameplay.ZombieMountEvents.onLivingDeath(rider, entity);
+                }
             }
         });
 
