@@ -1,5 +1,6 @@
 package dev.molang.iamzombieq.mixin;
 
+import dev.molang.iamzombieq.gameplay.ZombieMobTargetingEvents;
 import dev.molang.iamzombieq.util.MountCapability;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -7,6 +8,7 @@ import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -47,6 +49,18 @@ abstract class MobMixin {
     private void iamzombieq$keepRiddenModMount(double distSqr, CallbackInfoReturnable<Boolean> callback) {
         if (MountCapability.activeFor((Mob) (Object) this).isPresent()) {
             callback.setReturnValue(false);
+        }
+    }
+
+    /**
+     * Deny-list hook: intercepts Mob.setTarget() to cancel targeting a zombie player
+     * unless the mob is a valid attacker for the player's form (or is retaliating/angered).
+     * Targets ZombieMobTargetingEvents.onChangeTarget for the actual logic.
+     */
+    @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
+    private void iamzombieq$onChangeTarget(LivingEntity target, CallbackInfo callback) {
+        if (!ZombieMobTargetingEvents.onChangeTarget((Mob) (Object) this, target)) {
+            callback.cancel();
         }
     }
 }

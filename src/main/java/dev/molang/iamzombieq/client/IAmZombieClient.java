@@ -28,7 +28,15 @@ public final class IAmZombieClient implements ClientModInitializer {
         EntityRendererRegistry.register(IAmZombieEntities.HEROBRINE, HerobrineRenderer::new);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            // TODO: Herobrine audio/vignette effects
+            if (client.player == null) return;
+            // Herobrine jolt vignette effect
+            if (joltVignetteTicks > 0) {
+                joltVignetteTicks--;
+            }
+            // Herobrine heartbeat audio
+            if (heartbeatCooldown > 0) {
+                heartbeatCooldown--;
+            }
         });
 
         ClientEntityEvents.ENTITY_LOAD.register((entity, world) -> {
