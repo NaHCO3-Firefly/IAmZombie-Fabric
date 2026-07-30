@@ -25,12 +25,17 @@ abstract class PlayerModelMixin {
 
         PlayerModel self = (PlayerModel) (Object) this;
         // Set arms to zombie position: rotate forward (pitch ~ -90 = reaching forward)
-        // Vanilla idle: arms hang down (rightArm.xRot ~ 0)
-        // Zombie attack: arms reach forward (rightArm.xRot ~ -PI/2)
         self.rightArm.xRot = (float) (-Math.PI * 0.5);
         self.leftArm.xRot = (float) (-Math.PI * 0.5);
-        // Slight inward rotation for zombie arms
         self.rightArm.zRot = 0.05F;
         self.leftArm.zRot = -0.05F;
+        // Also set the sleeve overlay parts (visible in MC 1.21+)
+        self.rightSleeve.xRot = (float) (-Math.PI * 0.5);
+        self.leftSleeve.xRot = (float) (-Math.PI * 0.5);
+        self.rightSleeve.zRot = 0.05F;
+        self.leftSleeve.zRot = -0.05F;
+        // Set pants overlay parts to match
+        self.rightPants.xRot = 0.0F;
+        self.leftPants.xRot = 0.0F;
     }
 }

@@ -644,25 +644,15 @@ public final class ZombiePlayerEvents {
     }
 
     private static boolean isSunBurnTick(ServerPlayer player) {
-        boolean monstersBurn = player.level().environmentAttributes().getValue(EnvironmentAttributes.MONSTERS_BURN, player.position());
+        // Simplified check: zombie burns in daylight if can see sky and not in water/rain
         float brightness = player.getLightLevelDependentMagicValue();
-        // Preserve the vanilla RNG short-circuit: the random tick chance is only sampled once the monster-burn and
-        // brightness preconditions pass. Draw nextFloat() only behind that gate so the float overload (no per-tick
-        // capturing lambda) consumes the player's random source exactly as the previous DoubleSupplier did.
-        if (!monstersBurn || brightness <= 0.5F) {
+        if (brightness <= 0.5F) {
             return false;
         }
-        float randomFloat = player.getRandom().nextFloat();
         SUN_BURN_EYE_POS.set(player.getX(), player.getEyeY(), player.getZ());
         boolean canSeeSky = player.level().canSeeSky(SUN_BURN_EYE_POS);
         boolean inWaterRainOrPowderSnow = player.isInWaterOrRain() || player.isInPowderSnow || player.wasInPowderSnow;
-        return ZombieSunlightRules.isVanillaSunBurnTick(
-                monstersBurn,
-                brightness,
-                randomFloat,
-                canSeeSky,
-                inWaterRainOrPowderSnow
-        );
+        return canSeeSky && !inWaterRainOrPowderSnow;
     }
 
     private static boolean replaceSunlightFireDamage(Object event) {

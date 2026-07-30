@@ -154,7 +154,7 @@ public final class CoffinNapManager {
         var clockHolder = level.dimensionType().defaultClock();
         if (clockHolder.isEmpty()) return false;
         var clock = clockHolder.get();
-        var clockManager = level.clockManager();
+        var clockManager = (net.minecraft.world.clock.ServerClockManager) level.clockManager();
         boolean result = clockManager.moveToTimeMarker(clock, net.minecraft.world.clock.ClockTimeMarkers.NIGHT);
         if (level.isRaining()) {
             level.resetWeatherCycle();
